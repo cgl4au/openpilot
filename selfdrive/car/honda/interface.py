@@ -275,12 +275,13 @@ class CarInterface(object):
 
     elif candidate == CAR.INSIGHT:
       stop_and_go = True
-      ret.mass = 2987. * CV.LB_TO_KG + std_cargo
+      ret.mass = 2990. * CV.LB_TO_KG + std_cargo
       ret.wheelbase = 2.7
       ret.centerToFront = ret.wheelbase * 0.39
-      ret.steerRatio = 15  # 12.58 is spec end-to-end
+      ret.steerRatio = 12.58  # as spec
       tire_stiffness_factor = 0.82
-      ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
+      ret.steerKf = 0.00007818594 # 0.00006
+      ret.steerKpV, ret.steerKiV = [[0.8], [0.24]]
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
       ret.longitudinalKiBP = [0., 35.]
