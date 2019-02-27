@@ -10,16 +10,10 @@ from selfdrive.controls.lib.drive_helpers import MPC_COST_LAT
 from selfdrive.controls.lib.model_parser import ModelParser
 import selfdrive.messaging as messaging
 
-from selfdrive.kegman_conf import kegman_conf
-
-
 def calc_states_after_delay(states, v_ego, steer_angle, curvature_factor, steer_ratio, delay):
   states[0].x = v_ego * delay
   states[0].psi = v_ego * curvature_factor * math.radians(steer_angle) / steer_ratio * delay
   return states
-
-k = kegman_conf()
-CAMERA_OFFSET = float(k.conf['cameraOffset'])  # m from center car to camera
 
 class PathPlanner(object):
   def __init__(self, CP):
