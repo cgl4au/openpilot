@@ -5,15 +5,6 @@ if [ -z "$PASSIVE" ]; then
 fi
 
 function launch {
-  # apply update only if no_ota_updates does not exist in /data directory
-  #file="/data/no_ota_updates"
-  #if ! [ -f "$file" ]; then
-  #  if [ "$(git rev-parse HEAD)" != "$(git rev-parse @{u})" ]; then
-  #    git reset --hard @{u} &&
-  #    git clean -xdf &&
-  #    exec "${BASH_SOURCE[0]}"
-  #  fi
-  #fi
 
   # no cpu rationing for now
   echo 0-3 > /dev/cpuset/background/cpus
