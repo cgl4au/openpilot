@@ -1,4 +1,3 @@
-#include <string.h>
 #include "monitoring.h"
 #include "common/mat.h"
 

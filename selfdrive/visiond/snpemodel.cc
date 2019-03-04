@@ -1,4 +1,3 @@
-#include <cassert>
 #include "snpemodel.h"
 
 void PrintErrorStringAndExit() {
@@ -8,9 +7,8 @@ void PrintErrorStringAndExit() {
 }
 
 SNPEModel::SNPEModel(const uint8_t *model_data, const size_t model_size, float *output, size_t output_size) {
-#ifdef QCOM
   assert(zdl::SNPE::SNPEFactory::isRuntimeAvailable(zdl::DlSystem::Runtime_t::GPU));
-#endif
+
   // load model
   std::unique_ptr<zdl::DlContainer::IDlContainer> container = zdl::DlContainer::IDlContainer::open(model_data, model_size);
   if (!container) { PrintErrorStringAndExit(); }
@@ -19,18 +17,11 @@ SNPEModel::SNPEModel(const uint8_t *model_data, const size_t model_size, float *
   // create model runner
   zdl::SNPE::SNPEBuilder snpeBuilder(container.get());
   while (!snpe) {
-#ifdef QCOM
     snpe = snpeBuilder.setOutputLayers({})
                       .setRuntimeProcessor(zdl::DlSystem::Runtime_t::GPU)
                       .setUseUserSuppliedBuffers(true)
                       .setPerformanceProfile(zdl::DlSystem::PerformanceProfile_t::HIGH_PERFORMANCE)
                       .build();
-#else
-    snpe = snpeBuilder.setOutputLayers({})
-                      .setUseUserSuppliedBuffers(true)
-                      .setPerformanceProfile(zdl::DlSystem::PerformanceProfile_t::HIGH_PERFORMANCE)
-                      .build();
-#endif
     if (!snpe) std::cerr << zdl::DlSystem::getLastErrorString() << std::endl;
   }
 
