@@ -363,6 +363,7 @@ struct CarParams {
   steerRateCost @40 :Float32; # Lateral MPC cost on steering rate
   steerControlType @46 :SteerControlType;
   radarOffCan @47 :Bool; # True when radar objects aren't visible on CAN
+  syncID @55  :Int16;  # SyncID should be one of the lowest numeric values (high priority)
 
   steerActuatorDelay @48 :Float32; # Steering wheel actuator delay in seconds
   openpilotLongitudinalControl @50 :Bool; # is openpilot doing the longitudinal control?

@@ -298,14 +298,15 @@ class CarInterface(object):
       ret.mass = 2990. * CV.LB_TO_KG + std_cargo
       ret.wheelbase = 2.7
       ret.centerToFront = ret.wheelbase * 0.39
-      ret.steerRatio = 12.58  # as spec
-      tire_stiffness_factor = 0.9
+      ret.steerRatio = 15.00  # 12.53 as spec
+      tire_stiffness_factor = 0.82 # 0.72
       ret.steerKf = 0.00006 # 0.00006 - 0.00007818594
       ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
-      ret.steerReactance = 0.8
-      ret.steerInductance = 1.2
-      ret.steerResistance = 0.6
+      ret.steerReactance = 1.25
+      ret.steerInductance = 2.25
+      ret.steerResistance = 0.75
       ret.eonToFront = 1.0
+      ret.syncID = 330
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
       ret.longitudinalKiBP = [0., 35.]
@@ -414,7 +415,7 @@ class CarInterface(object):
     # ******************* do can recv *******************
     canMonoTimes = []
 
-    self.cp.update(int(sec_since_boot() * 1e9), False)
+    self.cp.update(int(sec_since_boot() * 1e9), True)
     self.cp_cam.update(int(sec_since_boot() * 1e9), False)
 
     self.CS.update(self.cp, self.cp_cam)
@@ -532,6 +533,9 @@ class CarInterface(object):
         events.append(create_event('commIssue', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
     else:
       self.can_invalid_count = 0
+
+    if self.frame % 1000 == 0:
+      print("   steer frames skipped: %d   steer frames reused: %d" %(self.CS.steer_frame_skipped, self.CS.steer_frame_reused))
 
     if not self.CS.cam_can_valid and self.CP.enableCamera:
       self.cam_can_invalid_count += 1

@@ -64,6 +64,10 @@ pthread_t safety_setter_thread_handle = -1;
 pthread_t pigeon_thread_handle = -1;
 bool pigeon_needs_init;
 
+int bigRecv;
+uint32_t bigData[RECV_SIZE*2];
+uint16_t syncID;
+
 void pigeon_init();
 void *pigeon_thread(void *crap);
 
@@ -90,7 +94,8 @@ void *safety_setter_thread(void *s) {
 
   auto safety_model = car_params.getSafetyModel();
   auto safety_param = car_params.getSafetyParam();
-  LOGW("setting safety model: %d with param %d", safety_model, safety_param);
+  syncID = car_params.getSyncID();
+  LOGW("setting safety model: %d with param %d and sync id %d", safety_model, safety_param, syncID);
 
   int safety_setting = 0;
   switch (safety_model) {
@@ -212,15 +217,23 @@ void handle_usb_issue(int err, const char func[]) {
   // TODO: check other errors, is simply retrying okay?
 }
 
-void can_recv(void *s) {
+bool can_recv(void *s, uint64_t blockWakeTime, bool forceSend) {
   int err;
   uint32_t data[RECV_SIZE/4];
   int recv;
   uint32_t f1, f2;
+  bool frameSent;
+  uint64_t curTime;
+  frameSent = false;
 
   // do recv
   pthread_mutex_lock(&usb_lock);
 
+  curTime = 1e-3 * nanos_since_boot();
+  if (blockWakeTime > curTime) {
+    printf("     %lu   %lu    %lu   \n" , blockWakeTime, curTime, blockWakeTime - curTime);
+    usleep(blockWakeTime - curTime);
+  } 
   do {
     err = libusb_bulk_transfer(dev_handle, 0x81, (uint8_t*)data, RECV_SIZE, &recv, TIMEOUT);
     if (err != 0) { handle_usb_issue(err, __func__); }
@@ -234,36 +247,61 @@ void can_recv(void *s) {
 
   // return if length is 0
   if (recv <= 0) {
-    return;
+    return false;
   }
-
-  // create message
-  capnp::MallocMessageBuilder msg;
-  cereal::Event::Builder event = msg.initRoot<cereal::Event>();
-  event.setLogMonoTime(nanos_since_boot());
-
-  auto canData = event.initCan(recv/0x10);
-
-  // populate message
+  uint32_t address;
+  int bigIndex = bigRecv/0x10;
   for (int i = 0; i<(recv/0x10); i++) {
+    bigData[(bigIndex + i)*4] = data[i*4];
+    bigData[(bigIndex + i)*4+1] = data[i*4+1];
+    bigData[(bigIndex + i)*4+2] = data[i*4+2];
+    bigData[(bigIndex + i)*4+3] = data[i*4+3];
+    bigRecv += 0x10;
     if (data[i*4] & 4) {
       // extended
-      canData[i].setAddress(data[i*4] >> 3);
-      //printf("got extended: %x\n", data[i*4] >> 3);
+      address = data[i*4] >> 3;
+      //printf("got extended: %x\n", bigData[i*4] >> 3);
     } else {
       // normal
-      canData[i].setAddress(data[i*4] >> 21);
+      address = data[i*4] >> 21;
     }
-    canData[i].setBusTime(data[i*4+1] >> 16);
-    int len = data[i*4+1]&0xF;
-    canData[i].setDat(kj::arrayPtr((uint8_t*)&data[i*4+2], len));
-    canData[i].setSrc((data[i*4+1] >> 4) & 0xff);
+    if (address == syncID) forceSend = true;
+  }
+  if (forceSend) {
+    frameSent = true;
+
+    capnp::MallocMessageBuilder msg;
+    cereal::Event::Builder event = msg.initRoot<cereal::Event>();
+    event.setLogMonoTime(nanos_since_boot());
+
+    auto canData = event.initCan(bigRecv/0x10);
+
+    // populate message
+    for (int i = 0; i<(bigRecv/0x10); i++) {
+      if (bigData[i*4] & 4) {
+        // extended
+        canData[i].setAddress(bigData[i*4] >> 3);
+        //printf("got extended: %x\n", bigData[i*4] >> 3);
+      } else {
+        // normal
+        canData[i].setAddress(bigData[i*4] >> 21);
+      }
+      canData[i].setBusTime(bigData[i*4+1] >> 16);
+      int len = bigData[i*4+1]&0xF;
+      canData[i].setDat(kj::arrayPtr((uint8_t*)&bigData[i*4+2], len));
+      canData[i].setSrc((bigData[i*4+1] >> 4) & 0xff);
+    }
+
+    // send to can
+    auto words = capnp::messageToFlatArray(msg);
+    auto bytes = words.asBytes();
+    zmq_send(s, bytes.begin(), bytes.size(), 0);
+    //if (syncID == 0)  LOGW("     Frame sent!  %d    %d    %d   \n", syncID, nanos_since_boot(), blockWakeTime - curTime);
+    bigRecv = 0;
+    bigIndex = 0;
   }
 
-  // send to can
-  auto words = capnp::messageToFlatArray(msg);
-  auto bytes = words.asBytes();
-  zmq_send(s, bytes.begin(), bytes.size(), 0);
+  return frameSent;
 }
 
 void can_health(void *s) {
@@ -446,20 +484,40 @@ void *can_recv_thread(void *crap) {
   void *context = zmq_ctx_new();
   void *publisher = zmq_socket(context, ZMQ_PUB);
   zmq_bind(publisher, "tcp://*:8006");
-  int sleepTime;
 
-  // run at ~200hz
+  bool frameSent;
+  bool skipOnce;
+  bool forceSend;
+  uint64_t wakeTime, blockWakeTime, curTime;
+  forceSend = true;
+  int sleepTime;
+  curTime = 1e-3 * nanos_since_boot();
+  wakeTime = 1e-3 * nanos_since_boot();
+
   while (!do_exit) {
-    can_recv(publisher);
-    // 5ms
-    sleepTime = 5000 - ((nanos_since_boot() / 1000) % 5000);
-    usleep(sleepTime);
-    //usleep(5000);
-    //LOGW("   sleeptime = %d  ", sleepTime);
+
+    //if (frameSent) printf("               ID %d  start time  %lu  wake time %lu  \n", syncID, curTime, wakeTime);
+    frameSent = can_recv(publisher, blockWakeTime, forceSend);
+    if (frameSent == true || skipOnce == true) {
+      curTime = 1e-3 * nanos_since_boot();
+      //if (frameSent) printf("               ID %d  Frame sent  %lu", syncID, curTime);
+      skipOnce = frameSent;
+      forceSend = (syncID < 0);
+      wakeTime += 4500;
+      if (curTime < wakeTime) {
+        //printf("               ID %d  sleeping 4500  %lu", syncID, curTime);
+        usleep(wakeTime - curTime);
+      }
+    }
+    else {
+      forceSend = (syncID == 0);
+      wakeTime += 1000;
+      //printf("               ID %d  sleeping 1000  %lu", syncID, curTime);
+      blockWakeTime = wakeTime;
+    }
   }
   return NULL;
 }
-
 void *can_health_thread(void *crap) {
   LOGD("start health thread");
 
@@ -706,3 +764,4 @@ int main() {
   libusb_close(dev_handle);
   libusb_exit(ctx);
 }
+
