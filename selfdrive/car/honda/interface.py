@@ -301,7 +301,7 @@ class CarInterface(object):
       ret.steerRatio = 15.00  # 12.53 as spec
       tire_stiffness_factor = 0.82 # 0.72
       ret.steerKf = 0.00006 # 0.00006 - 0.00007818594
-      ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
+      ret.steerKpV, ret.steerKiV = [[0.5], [0.15]]
       ret.steerReactance = 1.25
       ret.steerInductance = 2.25
       ret.steerResistance = 0.75
