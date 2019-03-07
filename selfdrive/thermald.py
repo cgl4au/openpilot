@@ -116,7 +116,7 @@ def check_car_battery_voltage(should_start, health, charging_disabled, msg):
   k = kegman_conf()
   print k
 
-  if charging_disabled and (health is None or health.health.voltage > 11800) and msg.thermal.batteryPercent < int(k.conf['battChargeMin']):
+  if charging_disabled and (health is None or health.health.voltage > (int(kegman.conf['carVoltageMinEonShutdown'])+500)) and msg.thermal.batteryPercent < int(kegman.conf['battChargeMin']):
     charging_disabled = False
     os.system('echo "1" > /sys/class/power_supply/battery/charging_enabled')
   elif not charging_disabled and (msg.thermal.batteryPercent > int(k.conf['battChargeMax']) or (health is not None and health.health.voltage < 11500 and not should_start)):
