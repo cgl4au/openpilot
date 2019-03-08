@@ -2854,10 +2854,10 @@ int main() {
       // touch event will still happen :(
       set_awake(s, true);
 
-      if(s->vision_connected && s->plus_state == 0 && s->ignoreLayout) {
-        s->scene.spammedButton = test_button_touch(s, touch_x, touch_y);
-        s->scene.spammedButtonTimeout = s->scene.spammedButton>3?6:1; // 6 = approx 200ms @ 30 fps
-      }
+     // if(s->vision_connected && s->plus_state == 0 && s->ignoreLayout) {
+      //  s->scene.spammedButton = test_button_touch(s, touch_x, touch_y);
+      //  s->scene.spammedButtonTimeout = s->scene.spammedButton>3?6:1; // 6 = approx 200ms @ 30 fps
+      //}
       
       if(touch_x>=vwp_w-100 && touch_y>=vwp_h-100 && s->touchTimeout==0) {
         toggleLog();
