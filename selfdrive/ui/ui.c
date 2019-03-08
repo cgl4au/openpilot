@@ -211,6 +211,7 @@ typedef struct UIState {
   int img_turn;
   int img_face;
   int img_map;
+  int img_brake;
 
   zsock_t *uievent_sock;
 
@@ -562,6 +563,9 @@ static void ui_init(UIState *s) {
 
   assert(s->img_map >= 0);
   s->img_map = nvgCreateImage(s->vg, "../assets/img_map.png", 1);
+
+  assert(s->img_brake >= 0);
+  s->img_brake = nvgCreateImage(s->vg, "../assets/img_brake_disc.png", 1);
 
   // init gl
   s->frame_program = load_program(frame_vertex_shader, frame_fragment_shader);
@@ -1020,7 +1024,7 @@ static void ui_draw_world(UIState *s) {
       fillAlpha = (int)(min(fillAlpha, 255));
     }
     draw_chevron(s, scene->lead_d_rel+2.7, scene->lead_y_rel, 25,
-                  nvgRGBA(201, 34, 49, fillAlpha), nvgRGBA(218, 202, 37, 255));
+                  nvgRGBA(201, 34, 49, fillAlpha), nvgRGBA(255, 255, 255, 255));
   }
 }
 
@@ -1710,12 +1714,12 @@ static void ui_draw_vision_speed(UIState *s) {
     if(scene->blinker_blinkingrate<0) scene->blinker_blinkingrate = 100;
   }
   
-  nvgBeginPath(s->vg);
-  nvgRect(s->vg, viz_speed_x, box_y, viz_speed_w, header_h);
-  if(scene->brakeLights) {
-    nvgFillColor(s->vg, nvgRGBA(240,0,0,100));
-    nvgFill(s->vg);
-  }
+//  nvgBeginPath(s->vg);
+//  nvgRect(s->vg, viz_speed_x, box_y, viz_speed_w, header_h);
+//  if(scene->brakeLights) {
+//    nvgFillColor(s->vg, nvgRGBA(240,0,0,100));
+//    nvgFill(s->vg);
+//  }
   nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
 
   if (s->is_metric) {
@@ -1845,6 +1849,33 @@ static void ui_draw_vision_face(UIState *s) {
   nvgFill(s->vg);
 }
 
+static void ui_draw_vision_brake(UIState *s) {
+  const UIScene *scene = &s->scene;
+  const int brake_size = 96;
+  const int brake_x = (scene->ui_viz_rx + (brake_size * 5) + (bdr_is * 4));
+  const int brake_y = (footer_y + ((footer_h - brake_size) / 2));
+  const int brake_img_size = (brake_size * 1.5);
+  const int brake_img_x = (brake_x - (brake_img_size / 2));
+  const int brake_img_y = (brake_y - (brake_size / 4));
+
+  bool brake_valid = scene->brakeLights;
+  float brake_img_alpha = brake_valid ? 1.0f : 0.15f;
+  float brake_bg_alpha = brake_valid ? 0.3f : 0.1f;
+  NVGcolor brake_bg = nvgRGBA(0, 0, 0, (255 * brake_bg_alpha));
+  NVGpaint brake_img = nvgImagePattern(s->vg, brake_img_x, brake_img_y,
+    brake_img_size, brake_img_size, 0, s->img_brake, brake_img_alpha);
+
+  nvgBeginPath(s->vg);
+  nvgCircle(s->vg, brake_x, (brake_y + (bdr_is * 1.5)), brake_size);
+  nvgFillColor(s->vg, brake_bg);
+  nvgFill(s->vg);
+
+  nvgBeginPath(s->vg);
+  nvgRect(s->vg, brake_img_x, brake_img_y, brake_img_size, brake_img_size);
+  nvgFillPaint(s->vg, brake_img);
+  nvgFill(s->vg);
+}
+
 static void ui_draw_vision_header(UIState *s) {
   const UIScene *scene = &s->scene;
   int ui_viz_rx = scene->ui_viz_rx;
@@ -1876,6 +1907,7 @@ static void ui_draw_vision_footer(UIState *s) {
   // Driver Monitoring
   ui_draw_vision_face(s);
   ui_draw_vision_map(s);
+  ui_draw_vision_brake(s);
 }
 
 static void ui_draw_vision_alert(UIState *s, int va_size, int va_color,
@@ -1990,13 +2022,13 @@ static void ui_draw_blank(UIState *s) {
   // draw IP address
   nvgBeginPath(s->vg);
   nvgTextAlign(s->vg, NVG_ALIGN_CENTER| NVG_ALIGN_TOP);
-  nvgFontFace(s->vg, "sans-semibold");
+  nvgFontFace(s->vg, "OpenSans-SemiBold");
   nvgFontSize(s->vg, 15 * 2.5);
   nvgFillColor(s->vg, nvgRGBA(255, 255, 255, 200));
   nvgText(s->vg, 150, 292, ds.ipAddress, NULL);
   if(ds.tx_throughput>0) {
     char str[64];
-    sprintf(str, "%d KB/s", ds.tx_throughput);
+    sprintf(str, "Upload Speed: %d KB/s", ds.tx_throughput);
     nvgText(s->vg, 150, 217, str, NULL);
   }
 }
