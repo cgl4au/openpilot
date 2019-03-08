@@ -305,7 +305,7 @@ class CarInterface(object):
       ret.steerReactance = 1.25
       ret.steerInductance = 2.25
       ret.steerResistance = 0.75
-      ret.eonToFront = 1.0
+      ret.eonToFront = 0.5
       ret.syncID = 330
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
