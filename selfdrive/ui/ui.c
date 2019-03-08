@@ -1088,16 +1088,16 @@ static void bb_ui_draw_measures_left(UIState *s, int bb_x, int bb_y, int bb_w)
     char val_str[16];
     char uom_str[6];
     NVGcolor val_color = nvgRGBA(255, 255, 255, 200);
-    if ((int)(scene->maxCpuTemp / 10) > 65)
+    if ((int)(scene->maxCpuTemp / 10) > 80)
     {
       val_color = nvgRGBA(255, 188, 3, 200);
     }
-    if ((int)(scene->maxCpuTemp / 10) > 85)
+    if ((int)(scene->maxCpuTemp / 10) > 92)
     {
       val_color = nvgRGBA(255, 0, 0, 200);
     }
     // temp is alway in C * 10
-    snprintf(val_str, sizeof(val_str), "%d C", (int)(scene->maxCpuTemp / 10));
+    snprintf(val_str, sizeof(val_str), "%d°C", (int)(scene->maxCpuTemp / 10));
     snprintf(uom_str, sizeof(uom_str), "");
     bb_h += bb_ui_draw_measure(s, val_str, uom_str, "CPU TEMP",
                                bb_rx, bb_ry, bb_uom_dx,
@@ -1172,10 +1172,10 @@ static void bb_ui_draw_measures_left(UIState *s, int bb_x, int bb_y, int bb_w)
       val_color = nvgRGBA(255, 0, 0, 200);
     }
 
-    snprintf(val_str, sizeof(val_str), "%.1f", s->scene.freeSpace * 100);
-    snprintf(uom_str, sizeof(uom_str), "%%");
+    snprintf(val_str, sizeof(val_str), "%.0f%%", s->scene.freeSpace* 100);
+    snprintf(uom_str, sizeof(uom_str), "");
 
-    bb_h += bb_ui_draw_measure(s, val_str, uom_str, "FREE",
+    bb_h += bb_ui_draw_measure(s, val_str, uom_str, "FREE SPACE",
                                bb_rx, bb_ry, bb_uom_dx,
                                val_color, lab_color, uom_color,
                                value_fontSize, label_fontSize, uom_fontSize);
@@ -1575,7 +1575,7 @@ static void ui_draw_vision_maxspeed(UIState *s) {
     nvgFontFace(s->vg, "sans-semibold");
     nvgFontSize(s->vg, 42*2.5);
     nvgFillColor(s->vg, nvgRGBA(255, 255, 255, 100));
-    nvgText(s->vg, viz_maxspeed_x+(viz_maxspeed_xo/2)+(viz_maxspeed_w/2), 242-bdr_is, "N/A", NULL);
+    nvgText(s->vg, viz_maxspeed_x+(viz_maxspeed_xo/2)+(viz_maxspeed_w/2), 242-bdr_is, "-", NULL);
   }
 
 #ifdef DEBUG_TURN
@@ -1675,7 +1675,7 @@ static void ui_draw_vision_speedlimit(UIState *s) {
   } else {
     nvgFontFace(s->vg, "sans-semibold");
     nvgFontSize(s->vg, 42*2.5);
-    nvgText(s->vg, viz_speedlim_x+viz_speedlim_w/2, viz_speedlim_y + (is_speedlim_valid ? 170 : 165), "N/A", NULL);
+    nvgText(s->vg, viz_speedlim_x+viz_speedlim_w/2, viz_speedlim_y + (is_speedlim_valid ? 170 : 165), "-", NULL);
   }
 }
 
