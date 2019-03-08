@@ -14,6 +14,7 @@ from common.numpy_fast import clip
 from common.filter_simple import FirstOrderFilter
 from selfdrive.kegman_conf import kegman_conf
 
+kegman = kegman_conf()
 ThermalStatus = log.ThermalData.ThermalStatus
 CURRENT_TAU = 2.   # 2s time constant
 
