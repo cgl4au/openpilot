@@ -8,6 +8,9 @@ from common.numpy_fast import interp
 from common.realtime import sec_since_boot
 from cereal import car
 import os, os.path
+import math
+import numpy as np
+from selfdrive.kegman_conf import kegman_conf
 
 _DT = 0.01    # 100Hz
 _DT_MPC = 0.05  # 20Hz
@@ -30,7 +33,30 @@ def apply_deadzone(angle, deadzone):
 
 class LatControl(object):
   def __init__(self, CP):
-
+    
+    kegman = kegman_conf()
+    self.write_conf = False
+    
+    if kegman.conf['react'] == "-1":
+      kegman.conf['react'] = str(CP.steerReactance)
+      self.write_conf = True
+    if kegman.conf['damp'] == "-1":
+      kegman.conf['damp'] = str(CP.steerInductance)
+      self.write_conf = True
+    if kegman.conf['resist'] == "-1":
+      kegman.conf['resist'] = str(CP.steerResistance)
+      self.write_conf = True
+    if kegman.conf['Kp'] == "-1":
+      kegman.conf['Kp'] = str(round(CP.steerKpV[0],2))
+      self.write_conf = True
+    if kegman.conf['Ki'] == "-1":
+      kegman.conf['Ki'] = str(round(CP.steerKiV[0],2))
+      self.write_conf = True
+          
+    if self.write_conf:
+      kegman.write_config(kegman.conf)
+    
+    self.mpc_frame = 0
     if CP.steerResistance > 0 and CP.steerReactance >= 0 and CP.steerInductance > 0:
       self.smooth_factor = CP.steerInductance * 2.0 * CP.steerActuatorDelay / _DT    # Multiplier for inductive component (feed forward)
       self.projection_factor = CP.steerReactance * CP.steerActuatorDelay / 2.0       # Mutiplier for reactive component (PI)
@@ -117,59 +143,34 @@ class LatControl(object):
   def reset(self):
     self.pid.reset()
 
-  def roll_tune(self, CP, PL):
+  def live_tune(self, CP):
     self.mpc_frame += 1
-    '''
-    sway_index = self.mpc_frame % 2000
-    if sway_index < 90:
-      PL.PP.sway = (self.sine_wave[sway_index * 2]) * 0.35
-    elif 90 <= sway_index < 180:
-      PL.PP.sway = -(self.sine_wave[(sway_index - 180) * 4]) * 0.45
-    '''
-
-    if _tuning_stage == 1:
-      if self.mpc_frame % 40 == 0:
-        self.resistanceIndex += 1
-        self.resistance = CP.steerResistance * (1.0 + 0.5 * self.sine_wave[self.resistanceIndex % 360])
+    if self.mpc_frame % 300 == 0:
+      # live tuning through /data/openpilot/tune.py overrides interface.py settings
+      kegman = kegman_conf() 
+      if kegman.conf['tuneGernby'] == "1":
+        self.reactance = float(kegman.conf['react']) 
+        self.inductance = float(kegman.conf['damp'])
+        self.resistance = float(kegman.conf['resist'])
+        self.steerKpV = np.array([float(kegman.conf['Kp'])])
+        self.steerKiV = np.array([float(kegman.conf['Ki'])])
+          
         self.accel_limit = 2.0 / self.resistance
-      if self.mpc_frame % 50 == 0:
-        self.reactanceIndex += 1
-        self.reactance = CP.steerReactance * (1.0 + 0.5 * self.sine_wave[self.reactanceIndex % 360])
         self.projection_factor = self.reactance * CP.steerActuatorDelay / 2.0
-        self.pid._k_i = ([0.], [self.KiV * _DT / self.projection_factor])
-      if self.mpc_frame % 60 == 0:
-        self.inductanceIndex += 1
-        self.inductance = CP.steerInductance * (1.0 + 0.5 * self.sine_wave[self.inductanceIndex % 360])
         self.smooth_factor = self.inductance * 2.0 * CP.steerActuatorDelay / _DT
-    elif _tuning_stage == 2:
-      if self.mpc_frame % 100 == 0:
-        self.reactanceIndex += 1
-        self.reactance = CP.steerReactance * (1.0 + 0.3 * self.sine_wave[self.reactanceIndex % 360])
-        self.projection_factor = self.reactance * CP.steerActuatorDelay / 2.0
-        self.pid._k_i = ([0.], [self.KiV * _DT / self.projection_factor])
-      if self.mpc_frame % 125 == 0:
-        self.inductanceIndex += 1
-        self.inductance = CP.steerInductance * (1.0 + 0.3 * self.sine_wave[self.inductanceIndex % 360])
-        self.smooth_factor = self.inductance * 2.0 * CP.steerActuatorDelay / _DT
-    elif _tuning_stage == 3:
-      if self.mpc_frame % 150 == 0:
-        self.reactanceIndex += 1
-        self.reactance = CP.steerReactance * (1.0 + 0.3 * self.sine_wave[self.reactanceIndex % 360])
-        self.projection_factor = self.reactance * CP.steerActuatorDelay / 2.0
-        self.pid._k_i = ([0.], [self.KiV * _DT / self.projection_factor])
-    elif _tuning_stage == 4:
-      if self.mpc_frame % 150 == 0:
-        self.inductanceIndex += 1
-        self.inductance = CP.steerInductance * (1.0 + 0.3 * self.sine_wave[self.inductanceIndex % 360])
-        self.smooth_factor = self.inductance * 2.0 * CP.steerActuatorDelay / _DT
-    elif _tuning_stage == 5:
-      if self.mpc_frame % 150 == 0:
-        self.resistanceIndex += 1
-        self.resistance = CP.steerResistance * (1.0 + 0.3 * self.sine_wave[self.resistanceIndex % 360])
-        self.accel_limit = 2.0 / self.resistance
+      
+        # Eliminate break-points, since they aren't needed (and would cause problems for resonance)
+        #KpV = [np.interp(25.0, CP.steerKpBP, self.steerKpV)]
+        KpV = [np.interp(25.0, CP.steerKpBP, self.steerKpV)]
+        #KiV = [np.interp(25.0, CP.steerKiBP, self.steerKiV)]
+        KiV = [np.interp(25.0, CP.steerKiBP, self.steerKiV)]
+        self.pid = PIController(([0.], KpV),
+                                ([0.], KiV),
+                                k_f=CP.steerKf, pos_limit=1.0)
 
   def update(self, active, v_ego, angle_steers, angle_rate, angle_offset, steer_override, CP, VM, path_plan):
 
+    self.live_tune(CP)  
     if angle_rate == 0.0 and self.calculate_rate:
       if angle_steers != self.prev_angle_steers:
         self.steer_counter_prev = self.steer_counter
