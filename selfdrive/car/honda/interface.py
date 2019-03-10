@@ -298,13 +298,13 @@ class CarInterface(object):
       ret.mass = 2990. * CV.LB_TO_KG + std_cargo
       ret.wheelbase = 2.7
       ret.centerToFront = ret.wheelbase * 0.39
-      ret.steerRatio = 15.00  # 12.53 as spec
-      tire_stiffness_factor = 0.82 # 0.72
-      ret.steerKf = 0.00006 # 0.00006 - 0.00007818594
+      ret.steerRatio = 14.63  # 12.53 as spec
+      tire_stiffness_factor = 0.9 # 0.72
+      ret.steerKf = 0.00007818594 # 0.00006 - 0.00007818594
       ret.steerKpV, ret.steerKiV = [[0.51], [0.153]]
       ret.steerReactance = 1.25
       ret.steerInductance = 2.25
-      ret.steerResistance = 0.75
+      ret.steerResistance = 0.5
       ret.eonToFront = 0.5
       ret.syncID = 330
       ret.longitudinalKpBP = [0., 5., 35.]
