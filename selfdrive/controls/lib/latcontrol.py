@@ -55,11 +55,11 @@ class LatControl(object):
 
     self.mpc_frame = 0
     self.projection_factor = CP.steerInductance
-    self.response_time = CP.steerReactance
+    self.response_time = CP.steerReactance / 10.
     self.smooth_factor = CP.steerInductance / _DT
-    self.ff_angle_factor = 1.0
+    self.ff_angle_factor = 1.0                                                     # Kf multiplier for angle-based feed forward
     self.ff_rate_factor = 10.0
-    self.dampened_angle_steers = 0.0                      
+    self.dampened_angle_steers = 0.0                                                     # Kf multiplier for rate-based feed forward
     # Eliminate break-points, since they aren't needed (and would cause problems for resonance)
     KpV = [np.interp(25.0, CP.steerKpBP, CP.steerKpV)]
     KiV = [np.interp(25.0, CP.steerKiBP, CP.steerKiV)]
@@ -129,7 +129,7 @@ class LatControl(object):
       # live tuning through /data/openpilot/tune.py overrides interface.py settings
       kegman = kegman_conf()
       if kegman.conf['tuneGernby'] == "1":
-        reactance = float(kegman.conf['react'])
+        reactance = float(kegman.conf['react']) / 10.
         inductance = float(kegman.conf['damp'])
         self.steerKpV = np.array([float(kegman.conf['Kp'])])
         self.steerKiV = np.array([float(kegman.conf['Ki'])])
@@ -182,10 +182,9 @@ class LatControl(object):
         projected_angle_steers = float(angle_steers) + self.projection_factor * float(angle_rate)
         self.dampened_angle_steers = ((self.smooth_factor * self.dampened_angle_steers) + projected_angle_steers) / (1. + self.smooth_factor)
 
+        # Decide which feed forward mode should be used (angle or rate).  Use more dominant mode, but only if conditions are met
         angle_feed_forward = self.ff_angle_factor * apply_deadzone(self.angle_steers_des - float(angle_offset), 0.5)
         rate_feed_forward = self.ff_rate_factor * desired_rate
-
-        # Decide which feed forward mode should be used (angle or rate).  Use more dominant mode, but only if conditions are met
         rate_more_significant = abs(rate_feed_forward) > abs(angle_feed_forward)
         rate_angle_same_direction = (angle_feed_forward < 0) == (rate_feed_forward < 0)
         more_rate_desired = abs(desired_rate) > abs(angle_rate)
