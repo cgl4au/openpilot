@@ -36,8 +36,6 @@
 #include "slplay.h"
 
 #include "devicestate.c"
-//add pjlao's dashcam
-#include "./dashcam.h"
 
 #define STATUS_STOPPED 0
 #define STATUS_DISENGAGED 1
@@ -273,6 +271,9 @@ typedef struct UIState {
   unsigned int rgb_front_width, rgb_front_height, rgb_front_stride;
   size_t rgb_front_buf_len;
 
+  bool intrinsic_matrix_loaded;
+  mat3 intrinsic_matrix;
+
   UIScene scene;
 
   bool awake;
@@ -303,6 +304,7 @@ typedef struct UIState {
 
 } UIState;
 
+#include "dashcam.h"
 
 static int last_brightness = -1;
 static void set_brightness(UIState *s, int brightness) {
@@ -602,6 +604,37 @@ static void ui_init(UIState *s) {
   }
 
   zsock_send(s->uievent_sock, "i", UIEVENT_STARTUP);
+}
+
+// If the intrinsics are in the params entry, this copies them to
+// intrinsic_matrix and returns true.  Otherwise returns false.
+static bool try_load_intrinsics(mat3 *intrinsic_matrix) {
+  char *value;
+  const int result = read_db_value(NULL, "CloudCalibration", &value, NULL);
+
+  if (result == 0) {
+    JsonNode* calibration_json = json_decode(value);
+    free(value);
+
+    JsonNode *intrinsic_json =
+        json_find_member(calibration_json, "intrinsic_matrix");
+
+    if (intrinsic_json == NULL || intrinsic_json->tag != JSON_ARRAY) {
+      json_delete(calibration_json);
+      return false;
+    }
+
+    int i = 0;
+    JsonNode* json_num;
+    json_foreach(json_num, intrinsic_json) {
+      intrinsic_matrix->v[i++] = json_num->number_;
+    }
+    json_delete(calibration_json);
+
+    return true;
+  } else {
+    return false;
+  }
 }
 
 static void ui_init_vision(UIState *s, const VisionStreamBufs back_bufs,
@@ -927,25 +960,21 @@ static void draw_steering(UIState *s, float curvature) {
 static void draw_frame(UIState *s) {
   const UIScene *scene = &s->scene;
 
+  mat4 out_mat;
   float x1, x2, y1, y2;
   if (s->scene.frontview) {
+    out_mat = device_transform; // full 16/9
     // flip horizontally so it looks like a mirror
-    x1 = 0.0;
-    x2 = 1.0;
-    y1 = 1.0;
-    y2 = 0.0;
+    x1 = (float)scene->front_box_x / s->rgb_front_width;
+    x2 = (float)(scene->front_box_x + scene->front_box_width) / s->rgb_front_width;
+    y2 = (float)scene->front_box_y / s->rgb_front_height;
+    y1 = (float)(scene->front_box_y + scene->front_box_height) / s->rgb_front_height;
   } else {
+    out_mat = matmul(device_transform, frame_transform);
     x1 = 1.0;
     x2 = 0.0;
     y1 = 1.0;
     y2 = 0.0;
-  }
-
-  mat4 out_mat;
-  if (s->scene.frontview || s->scene.fullview) {
-    out_mat = matmul(device_transform, full_to_wide_frame_transform);
-  } else {
-    out_mat = matmul(device_transform, frame_transform);
   }
 
   const uint8_t frame_indicies[] = {0, 1, 2, 0, 2, 3};
@@ -1674,7 +1703,7 @@ static void ui_draw_vision_speed(UIState *s) {
   if (s->is_metric) {
     snprintf(speed_str, sizeof(speed_str), "%d", (int)(speed * 3.6 + 0.5));
   } else {
-    snprintf(speed_str, sizeof(speed_str), "%d", (int)(speed * 2.2369363 + 0.5));
+    snprintf(speed_str, sizeof(speed_str), "%d", (int)(speed * 2.2374144 + 0.5));
   }
   nvgFontFace(s->vg, "sans-bold");
   nvgFontSize(s->vg, 96*2.5);
@@ -2078,6 +2107,10 @@ static void update_status(UIState *s, int status) {
 
 static void ui_update(UIState *s) {
   int err;
+
+  if (!s->intrinsic_matrix_loaded) {
+    s->intrinsic_matrix_loaded = try_load_intrinsics(&s->intrinsic_matrix);
+  }
 
   if (s->vision_connect_firstrun) {
     s->carstate_sock = zsock_new_sub(">tcp://127.0.0.1:8021", "");
@@ -2674,6 +2707,12 @@ static void* light_sensor_thread(void *args) {
 
   int SENSOR_LIGHT = 7;
 
+  struct stat buffer;
+  if (stat("/sys/bus/i2c/drivers/cyccg", &buffer) == 0) {
+    LOGD("LeEco light sensor detected");
+    SENSOR_LIGHT = 5;
+  }
+
   device->activate(device, SENSOR_LIGHT, 0);
   device->activate(device, SENSOR_LIGHT, 1);
   device->setDelay(device, SENSOR_LIGHT, ms2ns(100));
@@ -2687,7 +2726,9 @@ static void* light_sensor_thread(void *args) {
       LOG_100("light_sensor_poll failed: %d", n);
     }
     if (n > 0) {
-      s->light_sensor = buffer[0].light;
+      if (SENSOR_LIGHT == 5) s->light_sensor = buffer[0].light * 2;
+      else s->light_sensor = buffer[0].light;
+      //printf("new light sensor value: %f\n", s->light_sensor);
     }
   }
 
