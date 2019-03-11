@@ -36,6 +36,8 @@
 #include "slplay.h"
 
 #include "devicestate.c"
+//add pjlao's dashcam
+#include "./dashcam.h"
 
 #define STATUS_STOPPED 0
 #define STATUS_DISENGAGED 1
@@ -2861,6 +2863,7 @@ int main() {
     }
 
     if (s->awake) {
+      dashcam(s, touch_x, touch_y);
       ui_draw(s);
       glFinish();
       should_swap = true;
