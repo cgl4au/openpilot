@@ -11,6 +11,7 @@ import selfdrive.messaging as messaging
 from selfdrive.config import Conversions as CV
 from selfdrive.services import service_list
 from selfdrive.car.car_helpers import get_car
+from selfdrive.controls.lib.planner import Planner
 from selfdrive.controls.lib.drive_helpers import learn_angle_offset, \
                                                  get_events, \
                                                  create_event, \
@@ -27,6 +28,7 @@ from selfdrive.locationd.calibration_helpers import Calibration, Filter
 
 ThermalStatus = log.ThermalData.ThermalStatus
 State = log.Live100Data.ControlState
+NoSteering = False
 
 
 def isActive(state):
@@ -54,6 +56,7 @@ def data_sample(CI, CC, plan_sock, path_plan_sock, thermal, calibration, health,
   cal = None
   hh = None
   dm = None
+  gps = None
 
   for socket, event in poller.poll(0):
     if socket is thermal:
@@ -204,6 +207,7 @@ def state_transition(CS, CP, state, events, soft_disable_timer, v_cruise_kph, AM
 def state_control(plan, path_plan, CS, CP, state, events, v_cruise_kph, v_cruise_kph_last, AM, rk,
                   driver_status, LaC, LoC, VM, angle_offset, passive, is_metric, cal_perc):
   """Given the state, this function returns an actuators packet"""
+  global NoSteering
 
   actuators = car.CarControl.Actuators.new_message()
 
@@ -222,6 +226,12 @@ def state_control(plan, path_plan, CS, CP, state, events, v_cruise_kph, v_cruise
   if plan.fcw:
     AM.add("fcw", enabled)
 
+  # handle lkasButton
+  for b in CS.buttonEvents:
+    if b.type in ["altButton1"] and b.pressed:
+      NoSteering = not NoSteering
+
+  # ***** state specific actions *****
   # State specific actions
 
   if state in [State.preEnabled, State.disabled]:
@@ -257,11 +267,12 @@ def state_control(plan, path_plan, CS, CP, state, events, v_cruise_kph, v_cruise
   actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
                                               v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
   # Steering PID loop and lateral MPC
-  actuators.steer, actuators.steerAngle = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate, angle_offset,
-                                                     CS.steeringPressed, CP, VM, path_plan)
+  if not NoSteering and not CS.leftBlinker and not CS.rightBlinker:
+    actuators.steer, actuators.steerAngle = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate, angle_offset,
+                                                       CS.steeringPressed, CP, VM, path_plan)
 
   # Send a "steering required alert" if saturation count has reached the limit
-  if LaC.sat_flag and CP.steerLimitAlert:
+  if (not NoSteering and not CS.leftBlinker and not CS.rightBlinker) and LaC.sat_flag and CP.steerLimitAlert:
     AM.add("steerSaturated", enabled)
 
   # Parse permanent warnings to display constantly
@@ -286,6 +297,8 @@ def data_send(plan, path_plan, CS, CI, CP, VM, state, events, actuators, v_cruis
   """Send actuators and hud commands to the car, send live100 and MPC logging"""
   plan_ts = plan.logMonoTime
   plan = plan.plan
+  # ***** control the car *****
+  global NoSteering
 
   CC = car.CarControl.new_message()
 
@@ -312,6 +325,15 @@ def data_send(plan, path_plan, CS, CI, CP, VM, state, events, actuators, v_cruis
 
     # send car controls over can
     CI.apply(CC)
+  else:
+    # update lanes based on NoSteering flag
+    CC.enabled = False
+    CC.cruiseControl.override = False
+    CC.hudControl.speedVisible = False
+    CC.hudControl.lanesVisible = not NoSteering and not CS.leftBlinker and not CS.rightBlinker
+    CC.hudControl.leadVisible = False
+    CC.hudControl.visualAlert = None
+    CC.hudControl.audibleAlert = None
 
   force_decel = driver_status.awareness < 0.
 
@@ -337,7 +359,7 @@ def data_send(plan, path_plan, CS, CI, CP, VM, state, events, actuators, v_cruis
     "vEgoRaw": CS.vEgoRaw,
     "angleSteers": LaC.dampened_angle_steers,
     "curvature": VM.calc_curvature(CS.steeringAngle * CV.DEG_TO_RAD, CS.vEgo),
-    "steerOverride": CS.steeringPressed,
+    "steerOverride": CS.steeringPressed or NoSteering and not CS.leftBlinker and not CS.rightBlinker,
     "state": state,
     "engageable": not bool(get_events(events, [ET.NO_ENTRY])),
     "longControlState": LoC.long_control_state,
@@ -389,6 +411,8 @@ def controlsd_thread(gctx=None, rate=100):
   # start the loop
   set_realtime_priority(3)
 
+  global NoSteering
+  NoSteering = False
   context = zmq.Context()
   params = Params()
 

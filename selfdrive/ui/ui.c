@@ -1400,32 +1400,6 @@ static void ui_draw_button(NVGcontext *vg, int x, int y, int w, int h, const cha
   nvgFillColor(vg, nvgRGBA(255, 255, 255, 200));
   nvgText(vg, x + w/2, y + (int)(40 * 2.5) + 5, label, NULL);
 }
-
-const int buttonCount = 4;
-const char *buttons[] = { "35", "55", "75", "OFF" };
-
-static void ui_draw_buttons(UIState *s) {
-    const UIScene *scene = &s->scene;
-    const int w = 180;
-    const int x = scene->ui_viz_rx + scene->ui_viz_rw/2 - ((buttonCount*w + (buttonCount-1)*20)/2);
-    const int y = box_h - bdr_is - 140;
-    const int h = 150;
-    for(int i=0;i<buttonCount;i++)
-      ui_draw_button(s->vg, x + (w+20) * i, y, w, h, buttons[i], scene->spammedButton==i);
-}
-
-static int test_button_touch(UIState *s, int tx, int ty) {
-    const UIScene *scene = &s->scene;
-    const int w = 180;
-    const int x = scene->ui_viz_rx + scene->ui_viz_rw/2 - ((buttonCount*w + (buttonCount-1)*20)/2);
-    const int y = box_h - bdr_is - 140;
-    const int h = 150;
-    for(int i=0;i<buttonCount;i++)
-      if(tx>=x+i*(w+20) && tx<=x+w+i*(w+20) && ty>=y && ty<=y+h)
-        return i;
-    return -1;
-}
-
 static void bb_ui_draw_UI(UIState *s)
 {
   /*
@@ -1463,16 +1437,6 @@ static void bb_ui_draw_UI(UIState *s)
     bb_ui_draw_measures_right(s, bb_dml_x, bb_dml_y, bb_dml_w);
     bb_ui_draw_measures_left(s, bb_dmr_x, bb_dmr_y, bb_dmr_w);
 
-    if(ds.buttonsOn)
-      ui_draw_buttons(s);
-  /*
-  }
-  if (tri_state_switch == 3)
-  {
-    ui_draw_buttons(s);
-    //ui_draw_vision_grid(s);
-  }
-  */
 }
 
 //BB END: functions added for the display of various items
@@ -2000,13 +1964,13 @@ static void ui_draw_blank(UIState *s) {
   // draw IP address
   nvgBeginPath(s->vg);
   nvgTextAlign(s->vg, NVG_ALIGN_CENTER| NVG_ALIGN_TOP);
-  nvgFontFace(s->vg, "OpenSans-SemiBold");
+  nvgFontFace(s->vg, "sans-semibold");
   nvgFontSize(s->vg, 15 * 2.5);
   nvgFillColor(s->vg, nvgRGBA(255, 255, 255, 200));
   nvgText(s->vg, 150, 292, ds.ipAddress, NULL);
   if(ds.tx_throughput>0) {
     char str[64];
-    sprintf(str, "Upload Speed: %d KB/s", ds.tx_throughput);
+    sprintf(str, "%d KB/s", ds.tx_throughput);
     nvgText(s->vg, 150, 217, str, NULL);
   }
 }
@@ -2876,11 +2840,6 @@ int main() {
       // touch event will still happen :(
       set_awake(s, true);
 
-      if(s->vision_connected && s->plus_state == 0 && s->ignoreLayout) {
-        s->scene.spammedButton = test_button_touch(s, touch_x, touch_y);
-        s->scene.spammedButtonTimeout = s->scene.spammedButton>3?6:1; // 6 = approx 200ms @ 30 fps
-      }
-      
       if(touch_x>=vwp_w-100 && touch_y>=vwp_h-100 && s->touchTimeout==0) {
         toggleLog();
         s->touchTimeout = 30;
@@ -2904,7 +2863,7 @@ int main() {
     }
 
     if (s->awake) {
-      dashcam(s, touch_x, touch_y);
+      //dashcam(s, touch_x, touch_y);
       ui_draw(s);
       glFinish();
       should_swap = true;
