@@ -213,8 +213,6 @@ typedef struct UIState {
   int img_map;
   int img_brake;
 
-  zsock_t *uievent_sock;
-
   zsock_t *thermal_sock;
   void *thermal_sock_raw;
   zsock_t *model_sock;
@@ -488,9 +486,6 @@ static void ui_init(UIState *s) {
   pthread_cond_init(&s->bg_cond, NULL);
 
   // init connections
-  s->uievent_sock = zsock_new_pub("tcp://0.0.0.0:8064");
-  assert(s->uievent_sock);
-
   s->thermal_sock = zsock_new_sub(">tcp://127.0.0.1:8005", "");
   assert(s->thermal_sock);
   s->thermal_sock_raw = zsock_resolve(s->thermal_sock);
@@ -603,7 +598,6 @@ static void ui_init(UIState *s) {
     }
   }
 
-  zsock_send(s->uievent_sock, "i", UIEVENT_STARTUP);
 }
 
 // If the intrinsics are in the params entry, this copies them to
@@ -2851,10 +2845,6 @@ int main() {
     if(s->touchTimeout>0)
       s->touchTimeout--;
 
-    // send button event
-    if(s->scene.spammedButton!=-1) 
-      zsock_send(s->uievent_sock, "i", s->scene.spammedButton+1);
-
     // manage wakefulness
     if (s->awake_timeout > 0) {
       s->awake_timeout--;
@@ -2923,9 +2913,6 @@ int main() {
 
   err = pthread_join(connect_thread_handle, NULL);
   assert(err == 0);
-
-  zsock_send(s->uievent_sock, "i", UIEVENT_SHUTDOWN);
-  zsock_destroy(&s->uievent_sock);
 
   return 0;
 }
