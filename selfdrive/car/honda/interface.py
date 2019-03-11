@@ -186,10 +186,8 @@ class CarInterface(object):
     ret.steerKiBP, ret.steerKpBP = [[0.], [0.]]
 
     ret.steerKf = 0.00006 # conservative feed-forward
-    ret.steerReactance = 1.0
-    ret.steerInductance = 1.0
-    ret.steerResistance = 1.0
-    ret.eonToFront = 0.5
+    ret.steerReactance = 0.025
+    ret.steerInductance = 0.15
 
     if candidate in [CAR.CIVIC, CAR.CIVIC_BOSCH]:
       stop_and_go = True
@@ -222,10 +220,9 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 15.96  # 11.82 is spec end-to-end
       tire_stiffness_factor = 0.8467
-      ret.steerReactance = 1.75
-      ret.steerInductance = 2.25
-      ret.steerResistance = 0.5
-      ret.eonToFront = 1.0
+      ret.steerReactance = 0.025
+      ret.steerInductance = 0.15
+      ret.syncID = 330
       ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
@@ -300,12 +297,14 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 14.63  # 12.53 as spec
       tire_stiffness_factor = 0.9 # 0.72
-      ret.steerKf = 0.00007818594 # 0.00006 - 0.00007818594
+      ret.steerKf = 0.00006 # 0.00006 - 0.00007818594
       ret.steerKpV, ret.steerKiV = [[0.51], [0.153]]
-      ret.steerReactance = 1.25
-      ret.steerInductance = 2.25
-      ret.steerResistance = 0.65
-      ret.eonToFront = 0.5
+      #ret.steerReactance = 1.25
+      #ret.steerInductance = 2.25
+      #ret.steerResistance = 0.65
+      #ret.eonToFront = 0.5
+      ret.steerReactance = 0.025
+      ret.steerInductance = 0.15
       ret.syncID = 330
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
@@ -352,7 +351,7 @@ class CarInterface(object):
       ret.longitudinalKiV = [0.18, 0.12]
 
     else:
-      raise ValueError("unsupported car %s" % candidate)    
+      raise ValueError("unsupported car %s" % candidate)
 
     ret.steerControlType = car.CarParams.SteerControlType.torque
 
@@ -392,7 +391,7 @@ class CarInterface(object):
     else:
       ret.gasMaxBP = [0.]  # m/s
       ret.gasMaxV = [0.] # max gas allowed
-    
+
     #ret.gasMaxBP = [0.]  # m/s
     #ret.gasMaxV = [0.6] if ret.enableGasInterceptor else [0.] # max gas allowed
     ret.brakeMaxBP = [5., 20.]  # m/s
@@ -465,7 +464,7 @@ class CarInterface(object):
     ret.cruiseState.available = bool(self.CS.main_on)
     ret.cruiseState.speedOffset = self.CS.cruise_speed_offset
     ret.cruiseState.standstill = False
-    
+
     ret.readdistancelines = self.CS.read_distance_lines
     ret.lkMode = self.CS.lkMode
 
@@ -591,7 +590,7 @@ class CarInterface(object):
       #  events.append(create_event('speedTooLow', [ET.IMMEDIATE_DISABLE]))
       #else:
         events.append(create_event("cruiseDisabled", [ET.IMMEDIATE_DISABLE]))   # send loud alert if slow and cruise disables during braking
-      
+
     if self.CS.CP.minEnableSpeed > 0 and ret.vEgo < 0.001:
       events.append(create_event('manualRestart', [ET.WARNING]))
 
