@@ -47,7 +47,7 @@ while True:
   print print_letters(param[j][0:9])
   print ""
   print print_letters(kegman.conf[param[j]])
-  print ""
+  print "react(steerDelay) - inductance(damp)"
   print ("Press 1, 3, 5, 7 to incr 0.1, 0.05, 0.01, 0.001")
   print ("press a, d, g, j to decr 0.1, 0.05, 0.01, 0.001")
   print ("press 0 to make the value 0")
