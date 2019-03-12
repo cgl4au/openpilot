@@ -2853,7 +2853,7 @@ int main() {
     }
 
     if (s->awake) {
-      dashcam(s, touch_x, touch_y);
+      //dashcam(s, touch_x, touch_y);
       ui_draw(s);
       glFinish();
       should_swap = true;
