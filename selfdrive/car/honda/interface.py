@@ -202,6 +202,8 @@ class CarInterface(object):
       if is_fw_modified:
         tire_stiffness_factor = 0.9
         ret.steerKf = 0.00004
+      ret.steerReactance = 0.025
+      ret.steerInductance = 0.15
       ret.syncID = 330
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [3.6, 2.4, 1.5]
@@ -288,10 +290,6 @@ class CarInterface(object):
       tire_stiffness_factor = 0.82 # 0.72
       ret.steerKf = 0.00006 # 0.00006 - 0.00007818594
       ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
-      #ret.steerReactance = 1.25
-      #ret.steerInductance = 2.25
-      #ret.steerResistance = 0.65
-      #ret.eonToFront = 0.5
       ret.steerReactance = 0.025 # steerDelay
       ret.steerInductance = 0.15 # damp
       ret.syncID = 330
