@@ -150,8 +150,8 @@ class CarInterface(object):
     if candidate in HONDA_BOSCH:
       ret.safetyModel = car.CarParams.SafetyModels.hondaBosch
       ret.enableCamera = True
-      ret.radarOffCan = True
-      ret.openpilotLongitudinalControl = False
+      ret.radarOffCan = False
+      ret.openpilotLongitudinalControl = True
     else:
       ret.safetyModel = car.CarParams.SafetyModels.honda
       ret.enableCamera = not any(x for x in CAMERA_MSGS if x in fingerprint)
@@ -283,15 +283,15 @@ class CarInterface(object):
 
     elif candidate == CAR.INSIGHT:
       stop_and_go = True
-      ret.mass = 2990. * CV.LB_TO_KG + std_cargo
+      ret.mass = 2987. * CV.LB_TO_KG + std_cargo
       ret.wheelbase = 2.7
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 12.58  # 12.53 as spec
-      tire_stiffness_factor = 0.68 # 0.72
+      tire_stiffness_factor = 0.82
       ret.steerKf = 0.00006 # 0.00006 - 0.00007818594
-      ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
-      ret.steerReactance = 0.035 # steerDelay
-      ret.steerInductance = 0.10 # damp
+      ret.steerKpV, ret.steerKiV = [[0.8], [0.24]]
+      ret.steerReactance = 0.008 # steerDelay
+      ret.steerInductance = 0.05 # damp
       ret.syncID = 330
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
