@@ -134,8 +134,9 @@ class CarController(object):
       snd_beep = snd_beep if snd_beep is not 0 else snd_chime
       
     # Do not send audible alert when steering is disabled or blinkers on
-    #if not CS.lkMode or CS.left_blinker_on or CS.right_blinker_on:
-    #  snd_chime = 0
+    if not CS.lkMode or CS.left_blinker_on or CS.right_blinker_on:
+      snd_beep = 0
+      snd_chime = 0
 
     #print chime, alert_id, hud_alert
     fcw_display, steer_required, acc_alert = process_hud_alert(hud_alert)
