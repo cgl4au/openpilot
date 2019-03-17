@@ -150,7 +150,7 @@ class CarInterface(object):
     if candidate in HONDA_BOSCH:
       ret.safetyModel = car.CarParams.SafetyModels.hondaBosch
       ret.enableCamera = True
-      ret.radarOffCan = False
+      ret.radarOffCan = True
       ret.openpilotLongitudinalControl = True
     else:
       ret.safetyModel = car.CarParams.SafetyModels.honda
