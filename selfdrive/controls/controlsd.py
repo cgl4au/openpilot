@@ -507,8 +507,8 @@ def controlsd_thread(gctx=None, rate=100):
 
     path_plan_age = (start_time - path_plan.logMonoTime) / 1e9
     plan_age = (start_time - plan.logMonoTime) / 1e9
-    if not path_plan.pathPlan.valid or plan_age > 0.5 or path_plan_age > 0.5:
-      events.append(create_event('plannerError', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
+    #if not path_plan.pathPlan.valid or plan_age > 0.5 or path_plan_age > 0.5:
+    #  events.append(create_event('plannerError', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
     events += list(plan.plan.events)
 
     # Only allow engagement with brake pressed when stopped behind another stopped car
@@ -527,7 +527,8 @@ def controlsd_thread(gctx=None, rate=100):
                     v_cruise_kph_last, AM, rk, driver_status,
                     LaC, LoC, VM, angle_offset, passive, is_metric, cal_perc)
 
-    rk.keep_time(2. / 10000)   # use "soft" time keeping for data OUT to vehicle
+    #rk.keep_time(2. / 10000)   # use "soft" time keeping for data OUT to vehicle
+    rk.monitor_time()
     prof.checkpoint("State Control")
 
     # Publish data

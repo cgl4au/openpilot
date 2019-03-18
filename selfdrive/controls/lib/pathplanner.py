@@ -30,6 +30,10 @@ class PathPlanner(object):
 
     self.setup_mpc(CP.steerRateCost)
     self.invalid_counter = 0
+    self.steer_error_index = 0
+    self.steer_lateral_error = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    self.mpc_angles = [0.0, 0.0, 0.0, 0.0]
+    self.mpc_times = [0.0, 0.0, 0.0, 0.0]
 
   def setup_mpc(self, steer_rate_cost):
     self.libmpc = libmpc_py.libmpc
@@ -41,8 +45,6 @@ class PathPlanner(object):
     self.cur_state[0].y = 0.0
     self.cur_state[0].psi = 0.0
     self.cur_state[0].delta = 0.0
-    self.mpc_angles = [0.0, 0.0, 0.0, 0.0]
-    self.mpc_times = [0.0, 0.0, 0.0, 0.0]
 
     self.angle_steers_des = 0.0
     self.angle_steers_des_mpc = 0.0
@@ -54,9 +56,21 @@ class PathPlanner(object):
     angle_steers = CS.carState.steeringAngle
     active = live100.live100.active
     angle_offset = live100.live100.angleOffset
-    self.MP.update(v_ego, md)
+    try:
+      if active and self.steer_lateral_error is not None:
+        self.steer_error_index = (self.steer_error_index + 1) % len(self.steer_lateral_error)
+        self.steer_lateral_error[self.steer_error_index] = v_ego * _DT_MPC * math.tan(math.radians(angle_steers - self.angle_steers_des_mpc))
+        lateral_error = np.clip(np.sum(self.steer_lateral_error), -0.5, 0.5)
+      else:
+        lateral_error = 0.0
+    except:
+      lateral_error = 0.0
 
-    # Run MPC
+    try:
+      self.MP.update(v_ego, md, lateral_error)
+    except:
+      pass
+      
     curvature_factor = VM.curvature_factor(v_ego)
 
     l_poly = libmpc_py.ffi.new("double[4]", list(self.MP.l_poly))
@@ -66,6 +80,7 @@ class PathPlanner(object):
     # account for actuation delay
     self.cur_state = calc_states_after_delay(self.cur_state, v_ego, angle_steers, curvature_factor, CP.steerRatio, CP.steerActuatorDelay)
 
+    # Run MPC
     v_ego_mpc = max(v_ego, 5.0)  # avoid mpc roughness due to low speed
     self.libmpc.run_mpc(self.cur_state, self.mpc_solution,
                         l_poly, r_poly, p_poly,
