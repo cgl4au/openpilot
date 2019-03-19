@@ -136,7 +136,7 @@ def radard_thread(gctx=None):
       last_md_ts = md.logMonoTime
 
     # *** get path prediction from the model ***
-    MP.update(v_ego, md)
+    MP.update(v_ego, md, 0.0)
 
     # run kalman filter only if prob is high enough
     if MP.lead_prob > 0.7:
