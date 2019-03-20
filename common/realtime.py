@@ -73,8 +73,7 @@ class Ratekeeper(object):
   def __init__(self, rate, print_delay_threshold=0.):
     """Rate in Hz for ratekeeping. print_delay_threshold must be nonnegative."""
     self._interval = 1. / rate
-    cur_time = sec_since_boot()
-    self._next_frame_time = cur_time + self._interval
+    self._next_frame_time = sec_since_boot() + self._interval
     self._print_delay_threshold = print_delay_threshold
     self._frame = 0
     self._remaining = 0
@@ -89,13 +88,8 @@ class Ratekeeper(object):
     return self._remaining
 
   # Maintain loop rate by calling this at the end of each loop
-  def keep_time(self, offset=False):
+  def keep_time(self):
     lagged = self.monitor_time()
-    if lagged and offset:
-      if self._frame < 1000:
-        self._next_frame_time += self._interval / 100
-      else:
-        self._next_frame_time += self._interval / 1000
     if self._remaining > 0:
       time.sleep(self._remaining)
     return lagged
@@ -111,3 +105,4 @@ class Ratekeeper(object):
     self._frame += 1
     self._remaining = remaining
     return lagged
+
