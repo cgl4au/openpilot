@@ -151,7 +151,7 @@ class CarInterface(object):
       ret.safetyModel = car.CarParams.SafetyModels.hondaBosch
       ret.enableCamera = True
       ret.radarOffCan = True
-      ret.openpilotLongitudinalControl = True
+      #ret.openpilotLongitudinalControl = True
     else:
       ret.safetyModel = car.CarParams.SafetyModels.honda
       ret.enableCamera = not any(x for x in CAMERA_MSGS if x in fingerprint)
