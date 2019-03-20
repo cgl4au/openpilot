@@ -212,8 +212,8 @@ class CarState(object):
     # 2 = temporary; 3 = TBD; 4 = temporary, hit a bump; 5 = (permanent); 6 = temporary; 7 = (permanent)
     # TODO: Use values from DBC to parse this field
     self.steer_error = cp.vl["STEER_STATUS"]['STEER_STATUS'] not in [0, 2, 3, 4, 6]
-    self.steer_not_allowed = cp.vl["STEER_STATUS"]['STEER_STATUS'] != 0
-    self.steer_warning = cp.vl["STEER_STATUS"]['STEER_STATUS'] not in [0, 3]   # 3 is low speed lockout, not worth a warning
+    self.steer_not_allowed = cp.vl["STEER_STATUS"]['STEER_STATUS'] not in [0, 4]
+    self.steer_warning = cp.vl["STEER_STATUS"]['STEER_STATUS'] not in [0, 3, 4]   # 3 is low speed lockout, not worth a warning
     if self.CP.radarOffCan:
       self.brake_error = 0
     else:
@@ -254,12 +254,13 @@ class CarState(object):
     if (steer_sensor_frame != (self.steer_sensor_frame_prev + 1) % 4):
       if steer_sensor_frame == self.steer_sensor_frame_prev:
         self.steer_frame_reused += 1
+        print ("  %d reused  %d skipped    %d    %d" % (self.steer_frame_reused, self.steer_frame_skipped, steer_sensor_frame, self.steer_sensor_frame_prev))
       else:
         self.steer_frame_skipped += 1
       print("     new_steer_frame %d   prev_steer_frame %d  at  %f2.4" % (steer_sensor_frame, self.steer_sensor_frame_prev, sec_since_boot()))
     self.steer_sensor_frame_prev = steer_sensor_frame
 
-    self.cruise_setting = cp.vl["SCM_BUTTONS"]['CRUISE_SETTING']
+    #self.cruise_setting = cp.vl["SCM_BUTTONS"]['CRUISE_SETTING']
     self.cruise_buttons = cp.vl["SCM_BUTTONS"]['CRUISE_BUTTONS']
 
     self.blinker_on = cp.vl["SCM_FEEDBACK"]['LEFT_BLINKER'] or cp.vl["SCM_FEEDBACK"]['RIGHT_BLINKER']
