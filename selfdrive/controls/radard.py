@@ -315,4 +315,3 @@ def main(gctx=None):
 
 if __name__ == "__main__":
   main()
->>>>>>> 27c82130... improved boardd sync
