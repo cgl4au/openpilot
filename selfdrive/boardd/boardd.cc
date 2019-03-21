@@ -246,7 +246,10 @@ bool can_recv(void *s, uint64_t locked_wake_time, bool force_send) {
   pthread_mutex_unlock(&usb_lock);
 
   // return if both buffers are empty
-  if (big_recv + recv <= 0) {
+  //if ((big_recv <= 0) && (recv <= 0)) {
+  //  return true;
+  //}
+  if ((big_recv + recv) <= 0)  {
     return true;
   }
 
