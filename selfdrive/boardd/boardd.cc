@@ -492,7 +492,7 @@ void *can_recv_thread(void *crap) {
   locked_wake_time = wake_time;
 
   while (!do_exit) {
-    while (sync_id > 0) {
+    while (sync_id > 0 && !do_exit) {
       frame_sent = can_recv(publisher, locked_wake_time, force_send);
 
       // drain the Panda twice at 4.5ms intervals, then once at 1.0ms interval (twice max if sync_id is set)
@@ -506,7 +506,7 @@ void *can_recv_thread(void *crap) {
         }
         else {
           if ((last_long_sleep - wake_time) > 5e5) {
-            printf("   delayed long time !  \n");
+            // probably a new drive
             wake_time = last_long_sleep;
           }
           else {
@@ -529,7 +529,7 @@ void *can_recv_thread(void *crap) {
         locked_wake_time = wake_time;
       }
     }
-    while (sync_id == 0) {
+    while (sync_id == 0 && !do_exit) {
       frame_sent = can_recv(publisher, locked_wake_time, force_send);
 
       // drain the Panda twice at 4.5ms intervals, then once at 1.0ms interval (twice max if sync_id is set)
@@ -538,12 +538,11 @@ void *can_recv_thread(void *crap) {
         wake_time += 4500;
         force_send = false;
         if (last_long_sleep < wake_time) {
-          //printf(" long sleep ! ");
           usleep(wake_time - last_long_sleep);
         }
         else {
           if ((last_long_sleep - wake_time) > 5e5) {
-            printf("   delayed long time !  \n");
+            // probably a new drive
             wake_time = last_long_sleep;
           }
           else {
@@ -561,7 +560,6 @@ void *can_recv_thread(void *crap) {
         }
       }
       else {
-        //printf("sent !  \n");
         force_send = true;
         recv_state = 0;
         wake_time += 1000;
@@ -751,7 +749,7 @@ int main() {
   LOGW("starting boardd");
 
   // set process priority
-  err = set_realtime_priority(1);
+  err = set_realtime_priority(3);
   LOG("setpriority returns %d", err);
 
   // check the environment

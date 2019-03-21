@@ -48,7 +48,7 @@ class EKFV1D(EKF):
 # FIXME: radard has a memory leak of about 50MB/hr
 # BOUNTY: $100 coupon on shop.comma.ai
 def radard_thread(gctx=None):
-  set_realtime_priority(3)
+  set_realtime_priority(2)
 
   steer_lateral_error = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
   steer_error_index = 0
