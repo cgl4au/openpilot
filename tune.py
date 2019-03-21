@@ -47,7 +47,14 @@ while True:
   print print_letters(param[j][0:9])
   print ""
   print print_letters(kegman.conf[param[j]])
-  print "react(steerDelay) - inductance(damp)"
+  print ""
+  print "MPCDam (Plan react) is the adjustment to the"
+  print "timing of the desired target angle (increase to"
+  print "turn sooner)"
+  print ""
+  print "DAMP (Torque Dampening) is adjustment to the"
+  print "torque calculation to achieve that angle"
+  print ""
   print ("Press 1, 3, 5, 7 to incr 0.1, 0.05, 0.01, 0.001")
   print ("press a, d, g, j to decr 0.1, 0.05, 0.01, 0.001")
   print ("press 0 to make the value 0")
@@ -120,3 +127,38 @@ while True:
 
   elif (char == "q"):
     break
+
+  if float(kegman.conf['tuneGernby']) != 1 and float(kegman.conf['tuneGernby']) != 0:
+    kegman.conf['tuneGernby'] = "0"
+  if float(kegman.conf['damp']) < 0 and float(kegman.conf['damp']) != -1:
+    kegman.conf['damp'] = "0"
+
+  if float(kegman.conf['damp']) > 1.0:
+    kegman.conf['damp'] = "1.0"
+
+  if float(kegman.conf['react']) < 0 and float(kegman.conf['react']) != -1:
+    kegman.conf['react'] = "0"
+
+  if float(kegman.conf['react']) > 1.0:
+    kegman.conf['react'] = "1.0"
+
+  if float(kegman.conf['Ki']) < 0 and float(kegman.conf['Ki']) != -1:
+    kegman.conf['Ki'] = "0"
+
+  if float(kegman.conf['Ki']) > 2:
+    kegman.conf['Ki'] = "2"
+
+  if float(kegman.conf['Kp']) < 0 and float(kegman.conf['Kp']) != -1:
+    kegman.conf['Kp'] = "0"
+
+  if float(kegman.conf['Kp']) > 3:
+    kegman.conf['Kp'] = "3"
+
+
+
+
+
+  if write_json:
+    kegman.write_config(kegman.conf)
+
+  time.sleep(button_delay)

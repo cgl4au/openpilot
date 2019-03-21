@@ -66,7 +66,7 @@ class LatControl(object):
         self.steerKpV = np.array([float(kegman.conf['Kp'])])
         self.steerKiV = np.array([float(kegman.conf['Ki'])])
         self.actual_projection = float(kegman.conf['damp'])
-        self.desired_projection = float(kegman.conf['react']) * 10.
+        self.desired_projection = float(kegman.conf['react'])
         self.actual_smoothing = self.actual_projection / _DT
         self.desired_smoothing = self.desired_projection / _DT
 
