@@ -38,8 +38,8 @@ class LatControl(object):
     self.mpc_frame = 0
     self.actual_projection = CP.steerInductance
     self.desired_projection = CP.steerReactance
-    self.actual_smoothing = self.desired_projection / _DT
-    self.desired_smoothing = self.actual_projection / _DT
+    self.actual_smoothing = self.actual_projection / _DT
+    self.desired_smoothing = self.desired_projection / _DT
     self.dampened_angle_steers = 0.0
     self.dampened_desired_angle = 0.0
     # Eliminate break-points, since they aren't needed (and would cause problems for resonance)
@@ -67,8 +67,8 @@ class LatControl(object):
         self.steerKiV = np.array([float(kegman.conf['Ki'])])
         self.actual_projection = float(kegman.conf['damp'])
         self.desired_projection = float(kegman.conf['react']) * 10.
-        self.actual_smoothing = self.desired_projection / _DT
-        self.desired_smoothing = self.actual_projection / _DT
+        self.actual_smoothing = self.actual_projection / _DT
+        self.desired_smoothing = self.desired_projection / _DT
 
         # Eliminate break-points, since they aren't needed (and would cause problems for resonance)
         KpV = [np.interp(25.0, CP.steerKpBP, self.steerKpV)]
