@@ -75,7 +75,7 @@ class LatControl(object):
         KiV = [np.interp(25.0, CP.steerKiBP, self.steerKiV)]
         self.pid._k_i = ([0.], KiV)
         self.pid._k_p = ([0.], KpV)
-        print(self.projection_factor, self.smooth_factor)
+        print(self.desired_projection, self.actual_projection)
       self.mpc_frame = 0
 
 
@@ -103,12 +103,12 @@ class LatControl(object):
       self.dampened_angle_steers = angle_steers
       self.dampened_desired_angle = angle_steers
     else:
-      projected_desired_angle = np.interp(sec_since_boot() + self.projection_factor, path_plan.mpcTimes, path_plan.mpcAngles)
-      self.dampened_desired_angle = ((self.smooth_factor * self.dampened_desired_angle) + projected_desired_angle) / (1. + self.smooth_factor)
+      projected_desired_angle = np.interp(sec_since_boot() + self.desired_projection, path_plan.mpcTimes, path_plan.mpcAngles)
+      self.dampened_desired_angle = ((self.desired_smoothing * self.dampened_desired_angle) + projected_desired_angle) / (1. + self.desired_smoothing)
 
       if CP.steerControlType == car.CarParams.SteerControlType.torque:
-        projected_angle_steers = float(angle_steers) + self.projection_factor * float(angle_rate)
-        self.dampened_angle_steers = ((self.smooth_factor * self.dampened_angle_steers) + projected_angle_steers) / (1. + self.smooth_factor)
+        projected_angle_steers = float(angle_steers) + self.actual_projection * float(angle_rate)
+        self.dampened_angle_steers = ((self.actual_smoothing * self.dampened_angle_steers) + projected_angle_steers) / (1. + self.actual_smoothing)
 
         steers_max = get_steer_max(CP, v_ego)
         self.pid.pos_limit = steers_max
