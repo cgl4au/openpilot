@@ -38,80 +38,72 @@ button_delay = 0.2
 kegman = kegman_conf()
 #kegman.conf['tuneGernby'] = "1"
 #kegman.write_config(kegman.conf)
-param = ["tuneGernby", "react", "damp", "Kp", "Ki"]
+param = ["tuneGernby", "react", "damp", "react", "Kp", "Ki"]
 
 j = 0
 while True:
-  print ""
   print ""
   print print_letters(param[j][0:9])
   print ""
   print print_letters(kegman.conf[param[j]])
   print ""
-  print "MPCDam (Plan react) is the adjustment to the"
+  print "REACT (Plan react) is the adjustment to the"
   print "timing of the desired target angle (increase to"
   print "turn sooner)"
   print ""
-  print "DAMP (Torque Dampening) is adjustment to the"
-  print "torque calculation to achieve that angle"
+  print "DAMPSTEER (Dampening of the sensor data) filters "
+  print "actual steering data to improve torque calculation"
+  print ""
+  print "DAMPMPC (Dampening of the path plan) filters "
+  print "desired angle to improve torque calculation"
   print ""
   print ("Press 1, 3, 5, 7 to incr 0.1, 0.05, 0.01, 0.001")
   print ("press a, d, g, j to decr 0.1, 0.05, 0.01, 0.001")
-  print ("press 0 to make the value 0")
-  print ("press 1 to make the value L")
-  print ("press SPACE for next parameter")
-  print ("press m for previous parameter")
+  print ("press 0 / L to make the value 0 / 1")
+  print ("press SPACE / m for next /prev parameter")
   print ("press q to quit")
 
   char  = getch()
+  write_json = False
   if (char == "7"):
     kegman.conf[param[j]] = str(float(kegman.conf[param[j]]) + 0.001)
-    kegman.write_config(kegman.conf)
-    time.sleep(button_delay)
+    write_json = True
 
   if (char == "5"):
     kegman.conf[param[j]] = str(float(kegman.conf[param[j]]) + 0.01)
-    kegman.write_config(kegman.conf)
-    time.sleep(button_delay)
+    write_json = True
 
   elif (char == "3"):
     kegman.conf[param[j]] = str(float(kegman.conf[param[j]]) + 0.05)
-    kegman.write_config(kegman.conf)
-    time.sleep(button_delay)
+    write_json = True
 
   elif (char == "1"):
     kegman.conf[param[j]] = str(float(kegman.conf[param[j]]) + 0.1)
-    kegman.write_config(kegman.conf)
-    time.sleep(button_delay)
+    write_json = True
 
-  if (char == "j"):
+  elif (char == "j"):
     kegman.conf[param[j]] = str(float(kegman.conf[param[j]]) - 0.001)
-    kegman.write_config(kegman.conf)
-    time.sleep(button_delay)
+    write_json = True
 
   elif (char == "g"):
     kegman.conf[param[j]] = str(float(kegman.conf[param[j]]) - 0.01)
-    kegman.write_config(kegman.conf)
-    time.sleep(button_delay)
+    write_json = True
 
   elif (char == "d"):
     kegman.conf[param[j]] = str(float(kegman.conf[param[j]]) - 0.05)
-    kegman.write_config(kegman.conf)
-    time.sleep(button_delay)
+    write_json = True
+
   elif (char == "a"):
     kegman.conf[param[j]] = str(float(kegman.conf[param[j]]) - 0.1)
-    kegman.write_config(kegman.conf)
-    time.sleep(button_delay)
+    write_json = True
 
   elif (char == "0"):
     kegman.conf[param[j]] = "0"
-    kegman.write_config(kegman.conf)
-    time.sleep(button_delay)
+    write_json = True
 
   elif (char == "l"):
     kegman.conf[param[j]] = "1"
-    kegman.write_config(kegman.conf)
-    time.sleep(button_delay)
+    write_json = True
 
   elif (char == " "):
     if j < len(param) - 1:
@@ -128,13 +120,9 @@ while True:
   elif (char == "q"):
     break
 
+
   if float(kegman.conf['tuneGernby']) != 1 and float(kegman.conf['tuneGernby']) != 0:
     kegman.conf['tuneGernby'] = "0"
-  if float(kegman.conf['damp']) < 0 and float(kegman.conf['damp']) != -1:
-    kegman.conf['damp'] = "0"
-
-  if float(kegman.conf['damp']) > 1.0:
-    kegman.conf['damp'] = "1.0"
 
   if float(kegman.conf['react']) < 0 and float(kegman.conf['react']) != -1:
     kegman.conf['react'] = "0"
