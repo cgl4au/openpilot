@@ -186,8 +186,10 @@ class CarInterface(object):
     ret.steerKiBP, ret.steerKpBP = [[0.], [0.]]
 
     ret.steerKf = 0.00006 # conservative feed-forward
-    ret.steerReactance = 0.025
-    ret.steerInductance = 0.05
+
+    ret.steerMPCOffsetTime = 0.025
+    ret.steerMPCDampenTime = 0.10
+    ret.steerDampenTime = 0.02
 
     if candidate in [CAR.CIVIC, CAR.CIVIC_BOSCH]:
       stop_and_go = True
@@ -203,9 +205,7 @@ class CarInterface(object):
       if is_fw_modified:
         tire_stiffness_factor = 0.9
         ret.steerKf = 0.00004
-      ret.steerReactance = 0.025
-      ret.steerInductance = 0.15
-      ret.syncID = 330
+      ret.steerDampenTime = 0.06
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [3.6, 2.4, 1.5]
       ret.longitudinalKiBP = [0., 35.]
@@ -220,8 +220,9 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 15.96  # 11.82 is spec end-to-end
       tire_stiffness_factor = 0.8467
-      ret.steerReactance = 0.025
-      ret.steerInductance = 0.15
+      ret.steerMPCOffsetTime = 0.025
+      ret.steerMPCDampenTime = 0.10
+      ret.steerDampenTime = 0.15
       ret.syncID = 330
       ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
       ret.longitudinalKpBP = [0., 5., 35.]
@@ -295,9 +296,10 @@ class CarInterface(object):
       ret.steerRatio = 12.58  # 12.53 as spec
       tire_stiffness_factor = 0.82
       ret.steerKf = 0.00006 # 0.00006 - 0.00007818594
-      ret.steerKpV, ret.steerKiV = [[0.72], [0.32]]
-      ret.steerReactance = 0.025 # steerDelay
-      ret.steerInductance = 0.1 # damp
+      ret.steerKpV, ret.steerKiV = [[0.72], [0.20]]
+      ret.steerMPCOffsetTime = 0.025
+      ret.steerMPCDampenTime = 0.10
+      ret.steerDampenTime = 0.15
       ret.syncID = 330
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
@@ -326,7 +328,8 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.41
       ret.steerRatio = 16.0         # as spec
       tire_stiffness_factor = 0.82
-      ret.steerKpV, ret.steerKiV = [[0.5], [0.22]]
+      ret.steerDampenTime = 0.025
+      ret.steerKpV, ret.steerKiV = [[0.50], [0.22]]
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
       ret.longitudinalKiBP = [0., 35.]

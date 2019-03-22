@@ -64,8 +64,9 @@ class CarInterface(object):
     ret.enableCamera = not any(x for x in STOCK_CONTROL_MSGS[candidate] if x in fingerprint)
     ret.openpilotLongitudinalControl = ret.enableCamera
 
-    ret.steerReactance = 0.025
-    ret.steerInductance = 0.15
+    ret.steerMPCOffsetTime = 0.025
+    ret.steerMPCDampenTime = 0.10
+    ret.steerDampenTime = 0.02
 
     std_cargo = 136
 
@@ -223,6 +224,7 @@ class CarInterface(object):
     # brake pedal
     ret.brake = self.CS.user_brake / 0xd0
     ret.brakePressed = self.CS.brake_pressed
+    ret.brakeLights = self.CS.frictionBrakesActive
 
     # steering wheel
     ret.steeringAngle = self.CS.angle_steers
@@ -282,11 +284,16 @@ class CarInterface(object):
 
     ret.buttonEvents = buttonEvents
 
+<<<<<<< HEAD
     if self.CS.lka_button and self.CS.lka_button != self.CS.prev_lka_button:
       if self.CS.lkMode:
         self.CS.lkMode = False
       else:
         self.CS.lkMode = True
+=======
+    if cruiseEnabled and self.CS.lka_button and self.CS.lka_button != self.CS.prev_lka_button:
+      self.CS.lkMode = not self.CS.lkMode
+>>>>>>> 87502d3b... lots of fixes, working well for Accord
 
     if self.CS.distance_button and self.CS.distance_button != self.CS.prev_distance_button:
        self.CS.follow_level -= 1

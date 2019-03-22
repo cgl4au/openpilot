@@ -27,7 +27,8 @@ class ModelParser(object):
       l_poly = model_polyfit(md.model.leftLane.points, self._path_pinv)  # left line
       r_poly = model_polyfit(md.model.rightLane.points, self._path_pinv)  # right line
 
-      lateral_error += CAMERA_OFFSET
+      #print("%d" % (1000. * lateral_error))
+      lateral_error = CAMERA_OFFSET
       # only offset left and right lane lines; offsetting p_poly does not make sense
       l_poly[3] += lateral_error
       r_poly[3] += lateral_error

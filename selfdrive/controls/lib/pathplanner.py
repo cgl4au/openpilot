@@ -31,9 +31,9 @@ class PathPlanner(object):
     self.setup_mpc(CP.steerRateCost)
     self.invalid_counter = 0
     self.steer_error_index = 0
-    self.steer_lateral_error = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    self.mpc_angles = [0.0, 0.0, 0.0, 0.0]
-    self.mpc_times = [0.0, 0.0, 0.0, 0.0]
+    self.steer_lateral_error = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    self.mpc_angles = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    self.mpc_times = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
   def setup_mpc(self, steer_rate_cost):
     self.libmpc = libmpc_py.libmpc
@@ -70,7 +70,8 @@ class PathPlanner(object):
       self.MP.update(v_ego, md, lateral_error)
     except:
       pass
-      
+
+    # Run MPC
     curvature_factor = VM.curvature_factor(v_ego)
 
     l_poly = libmpc_py.ffi.new("double[4]", list(self.MP.l_poly))
@@ -92,15 +93,11 @@ class PathPlanner(object):
     #  Check for infeasable MPC solution
     mpc_nans = np.any(np.isnan(list(self.mpc_solution[0].delta)))
     if not mpc_nans:
-      self.mpc_angles = [self.angle_steers_des_prev,
-                        float(math.degrees(self.mpc_solution[0].delta[1] * CP.steerRatio) + angle_offset),
-                        float(math.degrees(self.mpc_solution[0].delta[2] * CP.steerRatio) + angle_offset),
-                        float(math.degrees(self.mpc_solution[0].delta[3] * CP.steerRatio) + angle_offset)]
-
-      self.mpc_times = [cur_time,
-                        cur_time + _DT_MPC,
-                        cur_time + _DT_MPC + _DT_MPC,
-                        cur_time + _DT_MPC + _DT_MPC + _DT_MPC]
+      self.mpc_angles[0] = self.angle_steers_des_prev
+      self.mpc_times[0] = cur_time
+      for i in range(1,10):
+        self.mpc_angles[i] = float(math.degrees(self.mpc_solution[0].delta[i] * CP.steerRatio) + angle_offset)
+        self.mpc_times[i] = cur_time + (_DT_MPC * i)
 
       self.angle_steers_des_mpc = self.mpc_angles[1]
 
