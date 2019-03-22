@@ -284,16 +284,8 @@ class CarInterface(object):
 
     ret.buttonEvents = buttonEvents
 
-<<<<<<< HEAD
-    if self.CS.lka_button and self.CS.lka_button != self.CS.prev_lka_button:
-      if self.CS.lkMode:
-        self.CS.lkMode = False
-      else:
-        self.CS.lkMode = True
-=======
     if cruiseEnabled and self.CS.lka_button and self.CS.lka_button != self.CS.prev_lka_button:
       self.CS.lkMode = not self.CS.lkMode
->>>>>>> 87502d3b... lots of fixes, working well for Accord
 
     if self.CS.distance_button and self.CS.distance_button != self.CS.prev_distance_button:
        self.CS.follow_level -= 1
