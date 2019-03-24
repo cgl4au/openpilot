@@ -8,6 +8,7 @@ from selfdrive.swaglog import cloudlog
 from selfdrive.controls.lib.lateral_mpc import libmpc_py
 from selfdrive.controls.lib.drive_helpers import MPC_COST_LAT
 from selfdrive.controls.lib.model_parser import ModelParser
+from selfdrive.kegman_conf import kegman_conf
 import selfdrive.messaging as messaging
 
 _DT_MPC = 0.05
@@ -30,10 +31,9 @@ class PathPlanner(object):
 
     self.setup_mpc(CP.steerRateCost)
     self.invalid_counter = 0
-    self.steer_error_index = 0
-    self.steer_lateral_error = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    self.mpc_angles = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    self.mpc_times = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    self.last_kegman_update = 0
+    self.mpc_angles = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    self.mpc_times = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
   def setup_mpc(self, steer_rate_cost):
     self.libmpc = libmpc_py.libmpc
@@ -48,28 +48,14 @@ class PathPlanner(object):
 
     self.angle_steers_des = 0.0
     self.angle_steers_des_mpc = 0.0
-    self.angle_steers_des_prev = 0.0
     self.angle_steers_des_time = 0.0
 
   def update(self, CP, VM, CS, md, live100):
     v_ego = CS.carState.vEgo
-    angle_steers = CS.carState.steeringAngle
+    angle_steers = live100.live100.dampAngleSteers
     active = live100.live100.active
     angle_offset = live100.live100.angleOffset
-    try:
-      if active and self.steer_lateral_error is not None:
-        self.steer_error_index = (self.steer_error_index + 1) % len(self.steer_lateral_error)
-        self.steer_lateral_error[self.steer_error_index] = v_ego * _DT_MPC * math.tan(math.radians(angle_steers - self.angle_steers_des_mpc))
-        lateral_error = np.clip(np.sum(self.steer_lateral_error), -0.5, 0.5)
-      else:
-        lateral_error = 0.0
-    except:
-      lateral_error = 0.0
-
-    try:
-      self.MP.update(v_ego, md, lateral_error)
-    except:
-      pass
+    self.MP.update(v_ego, md)
 
     # Run MPC
     curvature_factor = VM.curvature_factor(v_ego)
@@ -79,25 +65,23 @@ class PathPlanner(object):
     p_poly = libmpc_py.ffi.new("double[4]", list(self.MP.p_poly))
 
     # account for actuation delay
+    self.cur_state[0].delta = math.radians(live100.live100.dampAngleSteersDes - angle_offset) / CP.steerRatio
     self.cur_state = calc_states_after_delay(self.cur_state, v_ego, angle_steers, curvature_factor, CP.steerRatio, CP.steerActuatorDelay)
 
-    # Run MPC
     v_ego_mpc = max(v_ego, 5.0)  # avoid mpc roughness due to low speed
     self.libmpc.run_mpc(self.cur_state, self.mpc_solution,
                         l_poly, r_poly, p_poly,
                         self.MP.l_prob, self.MP.r_prob, self.MP.p_prob, curvature_factor, v_ego_mpc, self.MP.lane_width)
 
-    cur_time = sec_since_boot()
-    self.angle_steers_des_prev = np.interp(cur_time, self.mpc_times, self.mpc_angles)
-
     #  Check for infeasable MPC solution
     mpc_nans = np.any(np.isnan(list(self.mpc_solution[0].delta)))
     if not mpc_nans:
-      self.mpc_angles[0] = self.angle_steers_des_prev
-      self.mpc_times[0] = cur_time
-      for i in range(1,10):
+
+      self.mpc_angles[0] = live100.live100.dampAngleSteersDes
+      self.mpc_times[0] = live100.logMonoTime * 1e-9
+      for i in range(1,20):
         self.mpc_angles[i] = float(math.degrees(self.mpc_solution[0].delta[i] * CP.steerRatio) + angle_offset)
-        self.mpc_times[i] = cur_time + (_DT_MPC * i)
+        self.mpc_times[i] = self.mpc_times[i-1] + _DT_MPC
 
       self.angle_steers_des_mpc = self.mpc_angles[1]
 
@@ -110,6 +94,7 @@ class PathPlanner(object):
       self.libmpc.init(MPC_COST_LAT.PATH, MPC_COST_LAT.LANE, MPC_COST_LAT.HEADING, CP.steerRateCost)
       self.cur_state[0].delta = math.radians(angle_steers) / CP.steerRatio
 
+      cur_time = sec_since_boot()
       if cur_time > self.last_cloudlog_t + 5.0:
         self.last_cloudlog_t = cur_time
         cloudlog.warning("Lateral mpc - nan: True")
