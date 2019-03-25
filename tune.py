@@ -38,7 +38,7 @@ button_delay = 0.2
 kegman = kegman_conf()
 #kegman.conf['tuneGernby'] = "1"
 #kegman.write_config(kegman.conf)
-param = ["tuneGernby", "react", "dampMPC", "dampSteer", "Kp", "Ki"]
+param = ["tuneGernby", "reactMPC", "dampMPC", "reactSteer", "dampSteer", "Kp", "Ki"]
 
 j = 0
 while True:
@@ -47,15 +47,20 @@ while True:
   print ""
   print print_letters(kegman.conf[param[j]])
   print ""
-  print "REACT (Plan react) is the adjustment to the"
-  print "timing of the desired target angle (increase to"
-  print "turn sooner)"
+  print "reactMPC is an adjustment to the time projection of the MPC"
+  print "angle used in the dampening calculation.  Increasing this value"
+  print "would cause the vehicle to turn sooner."
   print ""
-  print "DAMPSTEER (Dampening of the sensor data) filters "
-  print "actual steering data to improve torque calculation"
   print ""
-  print "DAMPMPC (Dampening of the path plan) filters "
-  print "desired angle to improve torque calculation"
+  print "reactSteer is an adjustment to the time projection of steering"
+  print "rate to determine future steering angle.  If the steering is "
+  print "too shaky, decrease this value (may be negative).  If the"
+  print "steering response is too slow, increase this value."
+  print ""
+  print ""
+  print "dampMPC / dampSteer is the amount of time that the samples"
+  print "will be projected and averaged to smooth the values"
+  print ""
   print ""
   print ("Press 1, 3, 5, 7 to incr 0.1, 0.05, 0.01, 0.001")
   print ("press a, d, g, j to decr 0.1, 0.05, 0.01, 0.001")
@@ -136,11 +141,17 @@ while True:
   if float(kegman.conf['dampSteer']) > 1.0:
     kegman.conf['dampSteer'] = "1.0"
 
-  if float(kegman.conf['react']) < 0 and float(kegman.conf['react']) != -1:
-    kegman.conf['react'] = "0"
+  if float(kegman.conf['reactMPC']) < -0.99 and float(kegman.conf['reactMPC']) != -1:
+    kegman.conf['reactMPC'] = "-0.99"
 
-  if float(kegman.conf['react']) > 1.0:
-    kegman.conf['react'] = "1.0"
+  if float(kegman.conf['reactMPC']) > 1.0:
+    kegman.conf['reactMPC'] = "1.0"
+
+  if float(kegman.conf['reactSteer']) < -0.99 and float(kegman.conf['reactSteer']) != -1:
+    kegman.conf['reactSteer'] = "-0.99"
+
+  if float(kegman.conf['reactSteer']) > 1.0:
+    kegman.conf['reactSteer'] = "1.0"
 
   if float(kegman.conf['Ki']) < 0 and float(kegman.conf['Ki']) != -1:
     kegman.conf['Ki'] = "0"

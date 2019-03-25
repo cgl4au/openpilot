@@ -76,9 +76,10 @@ class CarInterface(object):
     ret.steerKiBP, ret.steerKpBP = [[0.], [0.]]
     ret.steerActuatorDelay = 0.12  # Default delay, Prius has larger delay
 
-    ret.steerMPCOffsetTime = 0.025
-    ret.steerMPCDampenTime = 0.1
-    ret.steerDampenTime = 0.1
+    ret.steerMPCReactTime = 0.0       # increase total MPC projected time by 0 ms
+    ret.steerMPCDampTime = 0.0        # dampen desired angle over 0ms (0 samples)
+    ret.steerReactTime = -0.0         # decrease total projected angle by 0 ms
+    ret.steerDampTime = 0.0           # dampen projected steer angle over 0ms (0 samples)
 
     if candidate == CAR.PRIUS:
       stop_and_go = True

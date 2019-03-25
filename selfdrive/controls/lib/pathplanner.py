@@ -8,7 +8,6 @@ from selfdrive.swaglog import cloudlog
 from selfdrive.controls.lib.lateral_mpc import libmpc_py
 from selfdrive.controls.lib.drive_helpers import MPC_COST_LAT
 from selfdrive.controls.lib.model_parser import ModelParser
-from selfdrive.kegman_conf import kegman_conf
 import selfdrive.messaging as messaging
 
 _DT_MPC = 0.05

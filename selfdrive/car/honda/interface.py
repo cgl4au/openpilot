@@ -187,9 +187,10 @@ class CarInterface(object):
 
     ret.steerKf = 0.00006 # conservative feed-forward
 
-    ret.steerMPCOffsetTime = 0.025
-    ret.steerMPCDampenTime = 0.10
-    ret.steerDampenTime = 0.02
+    ret.steerMPCReactTime = 0.05       # increase total MPC projected time by 50 ms
+    ret.steerMPCDampTime = 0.10        # dampen desired angle over 100ms (10 samples)
+    ret.steerReactTime = -0.08         # decrease total projected angle by 80 ms
+    ret.steerDampTime = 0.10           # dampen projected steer angle over 100ms (10 samples)
 
     if candidate in [CAR.CIVIC, CAR.CIVIC_BOSCH]:
       stop_and_go = True
@@ -199,13 +200,17 @@ class CarInterface(object):
       ret.steerRatio = 14.63  # 10.93 is end-to-end spec
       tire_stiffness_factor = 1.
       ret.syncID = 330
+      ret.steerMPCReactTime = 0.05       # increase total MPC projected time by 50 ms
+      ret.steerMPCDampTime = 0.10        # dampen desired angle over 100ms (10 samples)
+      ret.steerReactTime = -0.04         # decrease total projected angle by 40 ms
+      ret.steerDampTime = 0.10           # dampen projected steer angle over 100ms (10 samples)
+
       # Civic at comma has modified steering FW, so different tuning for the Neo in that car
       is_fw_modified = os.getenv("DONGLE_ID") in ['99c94dc769b5d96e']
       ret.steerKpV, ret.steerKiV = [[0.4], [0.12]] if is_fw_modified else [[0.6], [0.18]]
       if is_fw_modified:
         tire_stiffness_factor = 0.9
         ret.steerKf = 0.00004
-      ret.steerDampenTime = 0.06
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [3.6, 2.4, 1.5]
       ret.longitudinalKiBP = [0., 35.]
@@ -220,9 +225,10 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 15.96  # 11.82 is spec end-to-end
       tire_stiffness_factor = 0.8467
-      ret.steerMPCOffsetTime = 0.05
-      ret.steerMPCDampenTime = 0.2
-      ret.steerDampenTime = 0.3
+      ret.steerMPCReactTime = 0.05       # increase total MPC projected time by 50 ms
+      ret.steerMPCDampTime = 0.30        # dampen desired angle over 300ms (30 samples)
+      ret.steerReactTime = 0.0           # increase total projected angle by 0 ms
+      ret.steerDampTime = 0.30           # dampen projected steer angle over 300ms (30 samples)
       ret.syncID = 330
       ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
       ret.longitudinalKpBP = [0., 5., 35.]
@@ -297,9 +303,10 @@ class CarInterface(object):
       tire_stiffness_factor = 0.82
       ret.steerKf = 0.00006 # 0.00006 - 0.00007818594
       ret.steerKpV, ret.steerKiV = [[0.52], [0.155]]
-      ret.steerMPCOffsetTime = 0.042 #react (0.025)
-      ret.steerMPCDampenTime = 0.152 #dampMPC (0.10)
-      ret.steerDampenTime = 0.1 #dampSteer (0.15)
+      ret.steerMPCReactTime = 0.05       # increase total MPC projected time by 50 ms
+      ret.steerMPCDampTime = 0.30        # dampen desired angle over 300ms (30 samples)
+      ret.steerReactTime = -0.05           # increase total projected angle by 50 ms
+      ret.steerDampTime = 0.30           # dampen projected steer angle over 300ms (30 samples)
       ret.syncID = 330
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
@@ -328,7 +335,10 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.41
       ret.steerRatio = 16.0         # as spec
       tire_stiffness_factor = 0.82
-      ret.steerDampenTime = 0.025
+      ret.steerMPCReactTime = 0.05       # increase total MPC projected time by 50 ms
+      ret.steerMPCDampTime = 0.10        # dampen desired angle over 100ms (10 samples)
+      ret.steerReactTime = -0.07         # decrease total projected angle by 70 ms
+      ret.steerDampTime = 0.10           # dampen projected steer angle over 100ms (10 samples)
       ret.steerKpV, ret.steerKiV = [[0.50], [0.22]]
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]

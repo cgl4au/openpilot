@@ -329,7 +329,6 @@ struct CarParams {
   centerToFront @9 :Float32;   # [m] GC distance to front axle
   steerRatio @10 :Float32;       # [] ratio between front wheels and steering wheel angles
   steerRatioRear @11 :Float32;  # [] rear steering ratio wrt front steering (usually 0)
-  eonToFront  @54  :Float32;    # [m] distance from EON to front wheels
 
   # things we can derive
   rotationalInertia @12 :Float32;    # [kg*m2] body rotational inertia
@@ -344,15 +343,16 @@ struct CarParams {
   steerKpDEPRECATED @15 :Float32;
   steerKiDEPRECATED @16 :Float32;
   steerKf @25 :Float32;
-  steerMPCOffsetTime @51 :Float32;
-  steerMPCDampenTime @52 :Float32;
-  steerDampenTime @53 :Float32;
+  steerMPCReactTime @51 :Float32;
+  steerMPCDampTime @52 :Float32;
+  steerReactTime @53 :Float32;
+  steerDampTime @54:Float32;
 
   # Kp and Ki for the longitudinal control
   longitudinalKpBP @36 :List(Float32);
   longitudinalKpV @37 :List(Float32);
   longitudinalKiBP @38 :List(Float32);
-  longitudinalKiV @39 :List(Float32);
+  longitudinalKiV @39 :List(Float32); 
 
   steerLimitAlert @29 :Bool;
 

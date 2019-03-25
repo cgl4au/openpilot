@@ -389,7 +389,7 @@ def controlsd_thread(gctx=None, rate=100):
   gc.disable()
 
   # start the loop
-  set_realtime_priority(4)
+  set_realtime_priority(3)
 
   context = zmq.Context()
   params = Params()
@@ -461,7 +461,7 @@ def controlsd_thread(gctx=None, rate=100):
   path_plan = messaging.new_message()
   path_plan.init('pathPlan')
 
-  rk = Ratekeeper(rate, print_delay_threshold=2. / 1000)
+  rk = Ratekeeper(rate, print_delay_threshold=12. / 1000)
   controls_params = params.get("ControlsParams")
   # Read angle offset from previous drive
   if controls_params is not None:

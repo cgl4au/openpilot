@@ -64,9 +64,10 @@ class CarInterface(object):
     ret.enableCamera = not any(x for x in STOCK_CONTROL_MSGS[candidate] if x in fingerprint)
     ret.openpilotLongitudinalControl = ret.enableCamera
 
-    ret.steerMPCOffsetTime = 0.025
-    ret.steerMPCDampenTime = 0.10
-    ret.steerDampenTime = 0.02
+    ret.steerMPCReactTime = 0.0       # increase total MPC projected time by 0 ms
+    ret.steerMPCDampTime = 0.0        # dampen desired angle over 0ms (0 samples)
+    ret.steerReactTime = -0.0         # decrease total projected angle by 0 ms
+    ret.steerDampTime = 0.0           # dampen projected steer angle over 0ms (0 samples)
 
     std_cargo = 136
 
