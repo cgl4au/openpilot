@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import zmq
-import math
 import numpy as np
 import numpy.matlib
 import importlib
@@ -49,10 +48,6 @@ class EKFV1D(EKF):
 # BOUNTY: $100 coupon on shop.comma.ai
 def radard_thread(gctx=None):
   set_realtime_priority(4)
-
-  steer_lateral_error = None  #[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-  steer_error_index = 0
-  lateral_error = 0.0
 
   # wait for stats about the car to come in from controls
   cloudlog.info("radard is waiting for CarParams")
@@ -126,17 +121,6 @@ def radard_thread(gctx=None):
       v_ego = l100.live100.vEgo
       steer_angle = l100.live100.angleSteers
       steer_override = l100.live100.steerOverride
-      angle_steers_des = l100.live100.angleSteersDes
-
-      if steer_lateral_error is not None:
-        steer_error_index = (steer_error_index + 1) % len(steer_lateral_error)
-        if active:
-          steer_lateral_error[steer_error_index] = (v_ego * tsv) * (v_ego * tsv) * math.tan(VM.calc_curvature(math.radians(steer_angle - angle_steers_des),v_ego))
-          lateral_error = np.clip(np.sum(steer_lateral_error), -0.5, 0.5)
-        else:
-          steer_lateral_error[steer_error_index] = 0.0
-          lateral_error = 0.0
-
 
       v_ego_array = np.append(v_ego_array, [[v_ego], [float(rk.frame)/rate]], 1)
       v_ego_array = v_ego_array[:, 1:]
@@ -150,7 +134,7 @@ def radard_thread(gctx=None):
       last_md_ts = md.logMonoTime
 
     # *** get path prediction from the model ***
-    MP.update(v_ego, md, lateral_error)
+    MP.update(v_ego, md)
 
     # run kalman filter only if prob is high enough
     if MP.lead_prob > 0.7:
