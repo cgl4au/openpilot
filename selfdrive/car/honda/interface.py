@@ -392,7 +392,7 @@ class CarInterface(object):
 
     # no max steer limit VS speed
     ret.steerMaxBP = [0.]  # m/s
-    ret.steerMaxV = [1.]   # max steer allowed 
+    ret.steerMaxV = [1.]   # max steer allowed
 
     # prevent lurching when resuming
     if ret.enableGasInterceptor:

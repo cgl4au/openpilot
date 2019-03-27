@@ -83,11 +83,6 @@ class CarInterface(object):
     ret.steerReactTime = -0.02        # decrease total projected angle by 20 ms
     ret.steerDampTime = 0.03          # dampen projected steer angle over 30ms (3 control cycles)
 
-    ret.steerMPCReactTime = 0.0       # increase total MPC projected time by 0 ms
-    ret.steerMPCDampTime = 0.0        # dampen desired angle over 0ms (0 samples)
-    ret.steerReactTime = -0.0         # decrease total projected angle by 0 ms
-    ret.steerDampTime = 0.0           # dampen projected steer angle over 0ms (0 samples)
-
     if candidate == CAR.JEEP_CHEROKEE:
       ret.wheelbase = 2.91  # in meters
       ret.steerRatio = 12.7
