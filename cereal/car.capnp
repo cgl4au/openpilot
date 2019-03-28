@@ -345,10 +345,6 @@ struct CarParams {
   steerKpDEPRECATED @15 :Float32;
   steerKiDEPRECATED @16 :Float32;
   steerKf @25 :Float32;
-  steerMPCReactTime @51 :Float32;
-  steerMPCDampTime @52 :Float32;
-  steerReactTime @53 :Float32;
-  steerDampTime @54:Float32;
 
   # Kp and Ki for the longitudinal control
   longitudinalKpBP @36 :List(Float32);

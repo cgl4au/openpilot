@@ -47,6 +47,7 @@ class PathPlanner(object):
 
     self.angle_steers_des = 0.0
     self.angle_steers_des_mpc = 0.0
+    self.angle_steers_des_prev = 0.0
     self.angle_steers_des_time = 0.0
 
   def update(self, CP, VM, CS, md, live100, live_parameters):
@@ -92,26 +93,19 @@ class PathPlanner(object):
       delta_desired = math.radians(angle_steers - angle_offset_bias) / VM.sR
       rate_desired = 0.0
 
-      self.mpc_angles[0] = live100.live100.dampAngleSteersDes
-      self.mpc_times[0] = live100.logMonoTime * 1e-9
-      for i in range(1,20):
-        self.mpc_angles[i] = float(math.degrees(self.mpc_solution[0].delta[i] * CP.steerRatio) + angle_offset)
-        self.mpc_times[i] = self.mpc_times[i-1] + _DT_MPC
+    self.cur_state[0].delta = delta_desired
 
     self.angle_steers_des_mpc = float(math.degrees(delta_desired * VM.sR) + angle_offset_bias)
 
-      # reset to current steer angle if not active or overriding
-      if active:
-        self.cur_state[0].delta = self.mpc_solution[0].delta[1]
-      else:
-        self.cur_state[0].delta = math.radians(angle_steers - angle_offset) / CP.steerRatio
-    else:
+    #  Check for infeasable MPC solution
+    mpc_nans = np.any(np.isnan(list(self.mpc_solution[0].delta)))
+    t = sec_since_boot()
+    if mpc_nans:
       self.libmpc.init(MPC_COST_LAT.PATH, MPC_COST_LAT.LANE, MPC_COST_LAT.HEADING, CP.steerRateCost)
       self.cur_state[0].delta = math.radians(angle_steers) / VM.sR
 
-      cur_time = sec_since_boot()
-      if cur_time > self.last_cloudlog_t + 5.0:
-        self.last_cloudlog_t = cur_time
+      if t > self.last_cloudlog_t + 5.0:
+        self.last_cloudlog_t = t
         cloudlog.warning("Lateral mpc - nan: True")
 
     if self.mpc_solution[0].cost > 20000. or mpc_nans:   # TODO: find a better way to detect when MPC did not converge
