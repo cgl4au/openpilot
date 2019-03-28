@@ -72,8 +72,9 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     calibrationProgress @47;
     lowBattery @48;
     invalidGiraffeHonda @49;
-    manualSteeringRequired @50;
-    manualSteeringRequiredBlinkersOn @51;
+    vehicleModelInvalid @50;
+    manualSteeringRequired @51;
+    manualSteeringRequiredBlinkersOn @52;
   }
 }
 
@@ -321,6 +322,7 @@ struct CarParams {
     hyundai @8;
     chrysler @9;
     tesla @10;
+    subaru @11;
   }
 
   # things about the car in the manual
@@ -352,9 +354,12 @@ struct CarParams {
   longitudinalKpBP @36 :List(Float32);
   longitudinalKpV @37 :List(Float32);
   longitudinalKiBP @38 :List(Float32);
-  longitudinalKiV @39 :List(Float32); 
-
+  longitudinalKiV @39 :List(Float32);
   steerLimitAlert @29 :Bool;
+  steerMPCReactTime @52 :Float32;
+  steerMPCDampTime @53 :Float32;
+  steerReactTime @54 :Float32;
+  steerDampTime @55:Float32;
 
   vEgoStopping @30 :Float32; # Speed at which the car goes into stopping state
   directAccelControl @31 :Bool; # Does the car have direct accel control or just gas/brake
@@ -363,7 +368,7 @@ struct CarParams {
   steerRateCost @40 :Float32; # Lateral MPC cost on steering rate
   steerControlType @46 :SteerControlType;
   radarOffCan @47 :Bool; # True when radar objects aren't visible on CAN
-  syncID @55  :Int16;  # SyncID should be one of the lowest numeric values (high priority)
+  syncID @51 :Int16;  # SyncID is optional
 
   steerActuatorDelay @48 :Float32; # Steering wheel actuator delay in seconds
   openpilotLongitudinalControl @50 :Bool; # is openpilot doing the longitudinal control?

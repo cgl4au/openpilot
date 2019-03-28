@@ -68,6 +68,10 @@ class CarInterface(object):
     rotationalInertia_civic = 2500
     tireStiffnessFront_civic = 192150
     tireStiffnessRear_civic = 202500
+    ret.steerMPCReactTime = 0.025     # increase total MPC projected time by 25 ms
+    ret.steerMPCDampTime = 0.05       # dampen desired angle over 50ms (1 mpc cycles)
+    ret.steerReactTime = -0.02        # decrease total projected angle by 20 ms
+    ret.steerDampTime = 0.03          # dampen projected steer angle over 30ms (3 control cycles)
 
     ret.steerMPCReactTime = 0.0       # increase total MPC projected time by 0 ms
     ret.steerMPCDampTime = 0.0        # dampen desired angle over 0ms (0 samples)
@@ -92,7 +96,6 @@ class CarInterface(object):
       ret.minSteerSpeed = 0.
     elif candidate == CAR.KIA_SORENTO:
       ret.steerKf = 0.00005
-      ret.steerRateCost = 0.5
       ret.mass = 1985 + std_cargo
       ret.wheelbase = 2.78
       ret.steerRatio = 14.4 * 1.1   # 10% higher at the center seems reasonable
@@ -101,7 +104,6 @@ class CarInterface(object):
       ret.minSteerSpeed = 0.
     elif candidate == CAR.ELANTRA:
       ret.steerKf = 0.00006
-      ret.steerRateCost = 0.5
       ret.mass = 1275 + std_cargo
       ret.wheelbase = 2.7
       ret.steerRatio = 13.73   #Spec
@@ -111,7 +113,6 @@ class CarInterface(object):
       ret.minSteerSpeed = 32 * CV.MPH_TO_MS
     elif candidate == CAR.GENESIS:
       ret.steerKf = 0.00005
-      ret.steerRateCost = 0.5
       ret.mass = 2060 + std_cargo
       ret.wheelbase = 3.01
       ret.steerRatio = 16.5
@@ -128,7 +129,6 @@ class CarInterface(object):
       ret.steerKpV, ret.steerKiV = [[0.25], [0.05]]
     elif candidate == CAR.KIA_STINGER:
       ret.steerKf = 0.00005
-      ret.steerRateCost = 0.5
       ret.mass = 1825 + std_cargo
       ret.wheelbase = 2.78
       ret.steerRatio = 14.4 * 1.15   # 15% higher at the center seems reasonable
@@ -188,7 +188,7 @@ class CarInterface(object):
   def update(self, c):
     # ******************* do can recv *******************
     canMonoTimes = []
-    self.cp.update(int(sec_since_boot() * 1e9), False)
+    self.cp.update(int(sec_since_boot() * 1e9), True)
     self.cp_cam.update(int(sec_since_boot() * 1e9), False)
     self.CS.update(self.cp, self.cp_cam)
     # create message

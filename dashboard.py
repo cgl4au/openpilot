@@ -2,6 +2,7 @@
 import zmq
 import time
 import numpy as np
+import math
 from influxdb import InfluxDBClient, SeriesHelper
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list
@@ -13,9 +14,9 @@ try:
   from selfdrive.kegman_conf import kegman_conf
 except:
   pass
-  
-def dashboard_thread(rate=100):
-  set_realtime_priority(3)
+
+def dashboard_thread(rate=200):
+  set_realtime_priority(5)
 
   USER = ''
   PASSWORD = ''
@@ -25,11 +26,14 @@ def dashboard_thread(rate=100):
   context = zmq.Context()
   poller = zmq.Poller()
   ipaddress = "127.0.0.1"
-  carState = messaging.sub_sock(context, service_list['carState'].port, addr=ipaddress, conflate=True, poller=poller)
+  #carState = messaging.sub_sock(context, service_list['carState'].port, addr=ipaddress, conflate=True, poller=poller)
   #can = messaging.sub_sock(context, service_list['can'].port, addr=ipaddress, poller=poller)
   can = "disabled"
   vEgo = 0.0
-  live100 = messaging.sub_sock(context, service_list['live100'].port, addr=ipaddress, conflate=True, poller=poller)
+  pathPlan = messaging.sub_sock(context, service_list['pathPlan'].port, addr=ipaddress, conflate=True, poller=poller)
+  #pathPlan = None
+  live100 = messaging.sub_sock(context, service_list['live100'].port, addr=ipaddress, conflate=False, poller=poller)
+  liveParameters = messaging.sub_sock(context, service_list['liveParameters'].port, addr=ipaddress, conflate=True, poller=poller)
   #live20 = messaging.sub_sock(context, service_list['live20'].port, addr=ipaddress, conflate=True, poller=poller)
   #model = messaging.sub_sock(context, service_list['model'].port, addr=ipaddress, conflate=True, poller=poller)
   #frame = messaging.sub_sock(context, service_list['frame'].port, addr=ipaddress, conflate=True, poller=poller)
@@ -38,6 +42,7 @@ def dashboard_thread(rate=100):
   #health = messaging.sub_sock(context, service_list['health'].port, addr=ipaddress, conflate=True, poller=poller)
   #sendcan = messaging.sub_sock(context, service_list['sendcan'].port, addr=ipaddress, conflate=True, poller=poller)
   #androidLog = messaging.sub_sock(context, service_list['androidLog'].port, addr=ipaddress, conflate=True, poller=poller)
+  carState = "disabled"
   androidLog = "disabled"
   sendcan = "disabled"
   health = "disabled"
@@ -49,6 +54,8 @@ def dashboard_thread(rate=100):
 
   _model = None
   _live100 = None
+  _liveParameters = None
+  _pathPlan = None
   _live20 = None
   _carState = None
   _can = None
@@ -70,20 +77,43 @@ def dashboard_thread(rate=100):
   rk = Ratekeeper(current_rate, print_delay_threshold=np.inf)
 
   kegman_counter = 0
+  monoTimeOffset = 0
+  receiveTime = 0
 
   while 1:
-    try:
-      receiveTime = int(time.time() * 1000000000)
+    #try:
+      #receiveTime = int(time.time() * 1000000000)
       for socket, event in poller.poll(0):
         if socket is live100:
           _live100 = messaging.recv_one(socket)
           vEgo = _live100.live100.vEgo
-          if vEgo > 0:
+          if vEgo > 0: # and _live100.live100.active:
             if sample_str != "":
                 sample_str += ","
+            receiveTime = int(monoTimeOffset + _live100.logMonoTime)
+            #print(receiveTime, monoTimeOffset, _live100.logMonoTime)
+            if (abs(receiveTime - int(time.time() * 1000000000)) > 10000000000):
+              angle_error_noise = 0.0
+              last_desired = 0.0
+              last_actual = 0.0
+              actual_angle_change_noise = 0.0
+              desired_angle_change_noise = 0.0
+              angle_error_noise = 0.0
+              monoTimeOffset = (time.time() * 1000000000) - _live100.logMonoTime
+              receiveTime = int(monoTimeOffset + _live100.logMonoTime)
+              print(int(time.time() * 1000000000), receiveTime, monoTimeOffset, _live100.logMonoTime)
+              #receiveTime = 1 / 0
+            abs_error = abs(_live100.live100.angleSteers - _live100.live100.angleSteersDes)
+            angle_error_noise = ((99. * angle_error_noise) + (math.pow(abs_error, 2.))) / 100.
+            abs_desired_change = abs(_live100.live100.angleSteersDes - last_desired)
+            desired_angle_change_noise = ((99. * desired_angle_change_noise) + (math.pow(abs_desired_change, 2.))) / 100.
+            abs_angle_change = abs(_live100.live100.angleSteersDes - last_actual)
+            actual_angle_change_noise = ((99. * actual_angle_change_noise) + (math.pow(abs_angle_change, 2.))) / 100.
+            last_desired = _live100.live100.angleSteersDes
+            last_actual = _live100.live100.angleSteers
 
-            sample_str += ("angle_steers_des=%f,dampened_angle_steers=%f,v_ego=%f,steer_override=%f,v_ego=%f,p=%f,i=%f,f=%f,cumLagMs=%f,vCruise=%f" %
-                        (_live100.live100.angleSteersDes, _live100.live100.angleSteers, _live100.live100.vEgo, _live100.live100.steerOverride, _live100.live100.vPid,
+            sample_str += ("ang_err_noise=%1.1f,des_noise=%1.1f,ang_noise=%1.1f,angle_steers_des=%1.2f,angle_steers=%1.2f,dampened_angle_steers_des=%1.2f,dampened_angle_rate_des=%1.2f,dampened_angle_steers=%1.2f,v_ego=%1.2f,steer_override=%1.2f,v_ego=%1.4f,p=%1.2f,i=%1.4f,f=%1.4f,cumLagMs=%1.2f,vCruise=%1.2f" %
+                        (angle_error_noise, desired_angle_change_noise, actual_angle_change_noise, _live100.live100.angleSteersDes, _live100.live100.angleSteers, _live100.live100.dampAngleSteersDes,  _live100.live100.dampAngleRateDes, _live100.live100.dampAngleSteers, _live100.live100.vEgo, _live100.live100.steerOverride, _live100.live100.vPid,
                         _live100.live100.upSteer, _live100.live100.uiSteer, _live100.live100.ufSteer, _live100.live100.cumLagMs, _live100.live100.vCruise))
 
           '''print(_live100)
@@ -157,6 +187,28 @@ def dashboard_thread(rate=100):
                   bigBoxWidth = 0,
                   bigBoxHeight = 0,
                   inputTransform = [1.25, 0, 374, 0, 1.25, 337.75, 0, 0, 1] ) ) )'''
+
+        elif socket is liveParameters:
+          _liveParameters = messaging.recv_one(socket)
+          lp = _liveParameters.liveParameters
+          if vEgo >= 0: # and _live100.live100.active:
+            if sample_str != "":
+                sample_str += ","
+            sample_str += ("angleOffset=%1.2f,angleOffsetAverage=%1.3f,stiffnessFactor=%1.3f,steerRatio=%1.3f" %
+                        (lp.angleOffset, lp.angleOffsetAverage, lp.stiffnessFactor, lp.steerRatio))
+
+        elif socket is pathPlan:
+          _pathPlan = messaging.recv_one(socket)
+          if vEgo > 0: # and _live100.live100.active:
+            if sample_str != "":
+                sample_str += ","
+            a = _pathPlan.pathPlan.mpcAngles
+            sample_str += ("lane_width=%1.2f,lpoly=%1.3f,rpoly=%1.3f,cpoly=%1.3f,dpoly=%1.3f,cProb=%1.3f,lProb=%1.3f,rProb=%1.3f,mpc1=%1.2f,mpc2=%1.2f,mpc3=%1.2f,mpc4=%1.2f,mpc5=%1.2f,mpc6=%1.2f,mpc7=%1.2f,mpc8=%1.2f,mpc9=%1.2f,mpc10=%1.2f,mpc11=%1.2f,mpc12=%1.2f,mpc13=%1.2f,mpc14=%1.2f,mpc15=%1.2f,mpc16=%1.2f,mpc17=%1.2f,mpc18=%1.2f" %
+                        (_pathPlan.pathPlan.laneWidth, _pathPlan.pathPlan.lPoly[3], _pathPlan.pathPlan.rPoly[3], _pathPlan.pathPlan.cPoly[3], _pathPlan.pathPlan.dPoly[3],
+                              _pathPlan.pathPlan.cProb,  _pathPlan.pathPlan.lProb,  _pathPlan.pathPlan.rProb, a[1], a[2], a[3],
+                              a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18]))
+
+
         #elif socket is live20:
         #  _live20 = messaging.recv_one(socket)
           '''live20 = (
@@ -189,7 +241,7 @@ def dashboard_thread(rate=100):
           if vEgo > 0:
             if sample_str != "":
                 sample_str += ","
-            sample_str += ("driver_torque=%f,angle_rate=%f,yawRate=%f,angle_steers=%f" % (_carState.carState.steeringTorque, _carState.carState.steeringRate, _carState.carState.yawRate, _carState.carState.steeringAngle))
+            sample_str += ("driver_torque=%1.2f,angle_rate=%1.2f,yawRate=%1.2f,angle_steers=%1.2f" % (_carState.carState.steeringTorque, _carState.carState.steeringRate, _carState.carState.yawRate, _carState.carState.steeringAngle))
 
           '''carState = (
               vEgo = 0,
@@ -323,48 +375,51 @@ def dashboard_thread(rate=100):
         #  _androidLog = messaging.recv_one(socket)
         #  print(_androidLog)
 
-      if sample_str != "":
-        kegman_counter += 1
-        if kegman_counter == 300:
-          kegman_counter = 0
-          try:
-            kegman = kegman_conf()
-            reactance = kegman.conf['react']
-            inductance = kegman.conf['damp']
-            steerKpV = kegman.conf['Kp']
-            steerKiV = kegman.conf['Ki']
-            sample_str += (",reactance=%s,inductance=%s,KpV=%s,KiV=%s" % (reactance, inductance, steerKpV, steerKiV))
-          except:
-            pass
-        influxLineString += ("opData,sources=capnp " + sample_str + " %s\n" % receiveTime)
-        frame_count += 1
-        sample_str = ""
-      if canDataString != "":
-        influxLineString += canDataString
-        frame_count += 1
-        canDataString = ""
+        if sample_str != "":
+          kegman_counter += 1
+          if kegman_counter == 300:
+            kegman_counter = 0
+            try:
+              kegman = kegman_conf()
+              mpc_project = kegman.conf['reactMPC']
+              mpc_smooth = kegman.conf['dampMPC']
+              steer_project = kegman.conf['reactSteer']
+              steer_smooth = kegman.conf['dampSteer']
+              steerKpV = kegman.conf['Kp']
+              steerKiV = kegman.conf['Ki']
+              sample_str += (",mpc_project=%s,mpc_smooth=%s,steer_project=%s,steer_smooth=%s,KpV=%s,KiV=%s" % (mpc_project,mpc_smooth,steer_project,steer_smooth, steerKpV, steerKiV))
+            except:
+              pass
+          influxLineString += ("opData,sources=capnp " + sample_str + " %s\n" % receiveTime)
+          frame_count += 1
+          sample_str = ""
+        if canDataString != "":
+          influxLineString += canDataString
+          frame_count += 1
+          canDataString = ""
 
-      if frame_count >= 10:
-        headers = { 'Content-type': 'application/octet-stream', 'Accept': 'text/plain' }
-        try:
-            influx.request("write",'POST', {'db':DBNAME}, influxLineString.encode('utf-8'), 204, headers)
-            if current_rate != rate:
-              current_rate = rate
-              rk = Ratekeeper(current_rate, print_delay_threshold=np.inf)
-            print ('%d %d' % (frame_count, len(influxLineString)))
-        except:
-            if current_rate != 1:
-              current_rate = 1
-              rk = Ratekeeper(current_rate, print_delay_threshold=np.inf)
-            continue
-        frame_count = 0
-        can_count = 0
-        influxLineString = ""
+        if frame_count >= 10:
+          #print(influxLineString)
+          headers = { 'Content-type': 'application/octet-stream', 'Accept': 'text/plain' }
+          try:
+              influx.request("write",'POST', {'db':DBNAME}, influxLineString.encode('utf-8'), 204, headers)
+              if current_rate != rate:
+                current_rate = rate
+                rk = Ratekeeper(current_rate, print_delay_threshold=np.inf)
+              print ('%d %d' % (frame_count, len(influxLineString)))
+          except:
+              if current_rate != 1:
+                current_rate = 1
+                rk = Ratekeeper(current_rate, print_delay_threshold=np.inf)
+              continue
+          frame_count = 0
+          can_count = 0
+          influxLineString = ""
 
       rk.keep_time()
-    except expression as identifier:
-      print(identifier)
-      pass
+    #except expression as identifier:
+    #  print(identifier)
+    #  pass
 
 def main(rate=200):
   dashboard_thread(rate)

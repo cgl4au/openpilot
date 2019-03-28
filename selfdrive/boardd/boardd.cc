@@ -42,6 +42,7 @@
 #define SAFETY_HYUNDAI 7
 #define SAFETY_TESLA 8
 #define SAFETY_CHRYSLER 9
+#define SAFETY_SUBARU 10
 #define SAFETY_TOYOTA_IPAS 0x1335
 #define SAFETY_TOYOTA_NOLIMITS 0x1336
 #define SAFETY_ALLOUTPUT 0x1337
@@ -129,6 +130,9 @@ void *safety_setter_thread(void *s) {
   case (int)cereal::CarParams::SafetyModels::CHRYSLER:
     safety_setting = SAFETY_CHRYSLER;
     break;
+  case (int)cereal::CarParams::SafetyModels::SUBARU:
+    safety_setting = SAFETY_SUBARU;
+    break;
   default:
     LOGE("unknown safety model: %d", safety_model);
   }
@@ -212,6 +216,7 @@ void handle_usb_issue(int err, const char func[]) {
   LOGE_100("usb error %d \"%s\" in %s", err, libusb_strerror((enum libusb_error)err), func);
   if (err == -4) {
     LOGE("lost connection");
+    sync_id = 0;
     usb_retry_connect();
   }
   // TODO: check other errors, is simply retrying okay?
@@ -246,10 +251,7 @@ bool can_recv(void *s, uint64_t locked_wake_time, bool force_send) {
   pthread_mutex_unlock(&usb_lock);
 
   // return if both buffers are empty
-  //if ((big_recv <= 0) && (recv <= 0)) {
-  //  return true;
-  //}
-  if ((big_recv + recv) <= 0)  {
+  if ((big_recv <= 0) && (recv <= 0)) {
     return true;
   }
 
@@ -370,6 +372,11 @@ void can_send(void *s) {
 
   capnp::FlatArrayMessageReader cmsg(amsg);
   cereal::Event::Reader event = cmsg.getRoot<cereal::Event>();
+  if (nanos_since_boot() - event.getLogMonoTime() > 1e9) {
+    //Older than 1 second. Dont send.
+    zmq_msg_close(&msg);
+    return;
+  }
   int msg_count = event.getCan().size();
 
   uint32_t *send = (uint32_t*)malloc(msg_count*0x10);
