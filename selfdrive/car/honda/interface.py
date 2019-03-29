@@ -306,10 +306,10 @@ class CarInterface(object):
       tire_stiffness_factor = 0.82
       ret.steerKf = 0.00006 # 0.00006 - 0.00007818594
       ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
-      ret.steerMPCReactTime = 0.025       # increase total MPC projected time by 25 ms
-      ret.steerMPCDampTime = 0.05        # dampen desired angle over 50ms (1 mpc cycle)
-      ret.steerReactTime = -0.025           # increase total projected angle by 25 ms
-      ret.steerDampTime = 0.03           # dampen projected steer angle over 300ms (30 samples)
+      ret.steerMPCReactTime = 0.025     # project desired angle 0 ms
+      ret.steerMPCDampTime = 0.3      # smooth desired angle over 300ms (30 samples)
+      ret.steerReactTime = 0.0        # project steer angle 0 ms (using steer rate)
+      ret.steerDampTime = 0.3        # smooth projected steer angle over 300ms (30 samples)
       ret.syncID = 330
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
