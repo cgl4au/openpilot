@@ -1,3 +1,4 @@
+from decimal import Decimal
 from selfdrive.kegman_conf import kegman_conf
 
 letters = { "a":[ "###", "# #", "###", "# #", "# #"], "b":[ "###", "# #", "###", "# #", "###"], "c":[ "###", "#", "#", "#", "###"], "d":[ "##", "# #", "# #", "# #", "##"], "e":[ "###", "#", "###", "#", "###"], "f":[ "###", "#", "###", "#", "#"], "g":[ "###", "# #", "###", "  #", "###"], "h":[ "# #", "# #", "###", "# #", "# #"], "i":[ "###", " #", " #", " #", "###"], "j":[ "###", " #", " #", " #", "##"], "k":[ "# #", "##", "#", "##", "# #"], "l":[ "#", "#", "#", "#", "###"], "m":[ "# #", "###", "###", "# #", "# #"], "n":[ "###", "# #", "# #", "# #", "# #"], "o":[ "###", "# #", "# #", "# #", "###"], "p":[ "###", "# #", "###", "#", "#"], "q":[ "###", "# #", "###", "  #", "  #"], "r":[ "###", "# #", "##", "# #", "# #"], "s":[ "###", "#", "###", "  #", "###"], "t":[ "###", " #", " #", " #", " #"], "u":[ "# #", "# #", "# #", "# #", "###"], "v":[ "# #", "# #", "# #", "# #", " #"], "w":[ "# #", "# #", "# #", "###", "###"], "x":[ "# #", " #", " #", " #", "# #"], "y":[ "# #", "# #", "###", "  #", "###"], "z":[ "###", "  #", " #", "#", "###"], " ":[ " "], "1":[ " #", "##", " #", " #", "###"], "2":[ "###", "  #", "###", "#", "###"], "3":[ "###", "  #", "###", "  #", "###"], "4":[ "#", "#", "# #", "###", "  #"], "5":[ "###", "#", "###", "  #", "###"], "6":[ "###", "#", "###", "# #", "###"], "7":[ "###", "  # ", " #", " #", "#"], "8":[ "###", "# #", "###", "# #", "###"], "9":[ "###", "# #", "###", "  #", "###"], "0":[ "###", "# #", "# #", "# #", "###"], "!":[ " # ", " # ", " # ", "   ", " # "], "?":[ "###", "  #", " ##", "   ", " # "], ".":[ "   ", "   ", "   ", "   ", " # "], "]":[ "   ", "   ", "   ", "  #", " # "], "/":[ "  #", "  #", " # ", "# ", "# "], ":":[ "   ", " # ", "   ", " # ", "   "], "@":[ "###", "# #", "## ", "#  ", "###"], "'":[ " # ", " # ", "   ", "   ", "   "], "#":[ " # ", "###", " # ", "###", " # "], "-":[ "  ", "  ","###","   ","   "] }
@@ -38,7 +39,7 @@ button_delay = 0.2
 kegman = kegman_conf()
 #kegman.conf['tuneGernby'] = "1"
 #kegman.write_config(kegman.conf)
-param = ["tuneGernby", "reactMPC", "dampMPC", "reactSteer", "dampSteer", "Kp", "Ki"]
+param = ["tuneGernby", "reactMPC", "dampMPC", "reactSteer", "dampSteer", "Kp", "Ki", "Kf"]
 
 j = 0
 while True:
@@ -62,16 +63,24 @@ while True:
   print "will be projected and averaged to smooth the values"
   print ""
   print ""
-  print ("Press 1, 3, 5, 7 to incr 0.1, 0.05, 0.01, 0.001")
-  print ("press a, d, g, j to decr 0.1, 0.05, 0.01, 0.001")
+  print ("Press 1, 3, 5, 7, 8 to incr 0.1, 0.05, 0.01, 0.001, 0.00001")
+  print ("press a, d, g, j, k to decr 0.1, 0.05, 0.01, 0.001, 0.00001")
   print ("press 0 / L to make the value 0 / 1")
   print ("press SPACE / m for next /prev parameter")
   print ("press q to quit")
-
   char  = getch()
   write_json = False
+
   if (char == "7"):
     kegman.conf[param[j]] = str(float(kegman.conf[param[j]]) + 0.001)
+    write_json = True
+
+  if (char == "8"):
+    kegman.conf[param[j]] = str('%.5f' % Decimal(float(kegman.conf[param[j]]) + 0.00001))
+    write_json = True
+
+  if (char == "k"):
+    kegman.conf[param[j]] = str('%.5f' % Decimal(float(kegman.conf[param[j]]) - 0.00001))
     write_json = True
 
   if (char == "5"):
@@ -161,6 +170,12 @@ while True:
 
   if float(kegman.conf['Kp']) < 0 and float(kegman.conf['Kp']) != -1:
     kegman.conf['Kp'] = "0"
+
+  if float(kegman.conf['Kf']) < 0.00001 and float(kegman.conf['Kf']) != 0.00001:
+    kegman.conf['Kf'] = "0.00001"
+
+  if float(kegman.conf['Kf']) > 0.0001:
+    kegman.conf['Kf'] = "0.0001"
 
   if float(kegman.conf['Kp']) > 3:
     kegman.conf['Kp'] = "3"
