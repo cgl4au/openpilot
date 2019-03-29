@@ -302,8 +302,8 @@ class CarInterface(object):
       ret.wheelbase = 2.7
       ret.syncID = 330
       ret.centerToFront = ret.wheelbase * 0.39
-      ret.steerRatio = 15.00  # 12.53 as spec
-      tire_stiffness_factor = 0.82
+      ret.steerRatio = 15.96  # 12.53 as spec
+      tire_stiffness_factor = 0.84
       ret.steerKf = 0.00007 # 0.00006 - 0.00007818594
       ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
       ret.steerMPCReactTime = 0.0     # project desired angle 0 ms
