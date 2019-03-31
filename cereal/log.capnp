@@ -1618,7 +1618,6 @@ struct LiveParametersData {
   angleOffsetAverage @3 :Float32;
   stiffnessFactor @4 :Float32;
   steerRatio @5 :Float32;
-  laneWidth @6 :Float32;
 }
 
 struct LiveMapData {
