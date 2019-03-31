@@ -43,8 +43,6 @@ class LatControl(object):
     if kegman.conf['Ki'] == "-1":
       kegman.conf['Ki'] = str(round(CP.steerKiV[0],3))
       self.write_conf = True
-    if kegman.conf['Kf'] == "-1":
-      kegman.conf['Kf'] = str(round(CP.steerKf,5))
 
     if self.write_conf:
       kegman.write_config(kegman.conf)
@@ -76,7 +74,6 @@ class LatControl(object):
       if kegman.conf['tuneGernby'] == "1":
         self.steerKpV = np.array([float(kegman.conf['Kp'])])
         self.steerKiV = np.array([float(kegman.conf['Ki'])])
-        self.steerKf = np.array([float(kegman.conf['Kf'])])
         self.total_actual_projection = max(0.0, float(kegman.conf['dampSteer']) + float(kegman.conf['reactSteer']))
         self.total_desired_projection = max(0.0, float(kegman.conf['dampMPC']) + float(kegman.conf['reactMPC']))
         self.actual_smoothing = max(1.0, float(kegman.conf['dampSteer']) / _DT)
@@ -88,7 +85,6 @@ class LatControl(object):
         KiV = [interp(25.0, CP.steerKiBP, self.steerKiV)]
         self.pid._k_i = ([0.], KiV)
         self.pid._k_p = ([0.], KpV)
-        self.pid.k_f = self.steerKf
         print(self.total_desired_projection, self.desired_smoothing, self.total_actual_projection, self.actual_smoothing, self.gernbySteer)
       else:
         self.gernbySteer = False

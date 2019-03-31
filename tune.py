@@ -39,7 +39,7 @@ button_delay = 0.2
 kegman = kegman_conf()
 #kegman.conf['tuneGernby'] = "1"
 #kegman.write_config(kegman.conf)
-param = ["tuneGernby", "reactMPC", "dampMPC", "reactSteer", "dampSteer", "Kp", "Ki", "Kf"]
+param = ["tuneGernby", "reactMPC", "dampMPC", "reactSteer", "dampSteer", "Kp", "Ki"]
 
 j = 0
 while True:
@@ -170,12 +170,6 @@ while True:
 
   if float(kegman.conf['Kp']) < 0 and float(kegman.conf['Kp']) != -1:
     kegman.conf['Kp'] = "0"
-
-  if float(kegman.conf['Kf']) < 0.00001 and float(kegman.conf['Kf']) != 0.00001:
-    kegman.conf['Kf'] = "0.00001"
-
-  if float(kegman.conf['Kf']) > 0.0001:
-    kegman.conf['Kf'] = "0.0001"
 
   if float(kegman.conf['Kp']) > 3:
     kegman.conf['Kp'] = "3"
