@@ -50,7 +50,7 @@ class EKFV1D(EKF):
 # BOUNTY: $100 coupon on shop.comma.ai
 def radard_thread(gctx=None):
   gc.disable()
-  set_realtime_priority(4)
+  set_realtime_priority(2)
 
   # wait for stats about the car to come in from controls
   cloudlog.info("radard is waiting for CarParams")
