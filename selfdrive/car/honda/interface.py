@@ -11,7 +11,10 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.honda.carstate import CarState, get_can_parser, get_cam_can_parser
 from selfdrive.car.honda.values import CruiseButtons, CAR, HONDA_BOSCH, AUDIO_HUD, VISUAL_HUD
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
-
+import zmq
+from selfdrive.services import service_list
+import selfdrive.messaging as messaging
+import subprocess
 try:
   from selfdrive.car.honda.carcontroller import CarController
 except ImportError:
@@ -83,6 +86,9 @@ class CarInterface(object):
   def __init__(self, CP, sendcan=None):
     self.CP = CP
 
+    context = zmq.Context()
+    self.poller = zmq.Poller()
+    self.live20 = messaging.sub_sock(context, service_list['live20'].port, conflate=True, poller=self.poller)
     self.frame = 0
     self.last_enable_pressed = 0
     self.last_enable_sent = 0
@@ -306,10 +312,10 @@ class CarInterface(object):
       tire_stiffness_factor = 0.82
       ret.steerKf = 0.00007818594 # 0.00006 - 0.00007818594
       ret.steerKpV, ret.steerKiV = [[0.485], [0.225]]
-      ret.steerMPCReactTime = -0.00250
-      ret.steerMPCDampTime = 0.005
-      ret.steerReactTime = -0.025
-      ret.steerDampTime = 0.005
+      ret.steerMPCReactTime = 0.025
+      ret.steerMPCDampTime = 0.25
+      ret.steerReactTime = 0.0
+      ret.steerDampTime = 0.0
       ret.syncID = 330
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
@@ -659,17 +665,42 @@ class CarInterface(object):
 
     pcm_accel = int(clip(c.cruiseControl.accelOverride, 0, 1) * 0xc6)
 
-    self.CC.update(self.sendcan, c.enabled, self.CS, self.frame,
-                   c.actuators,
-                   c.cruiseControl.speedOverride,
-                   c.cruiseControl.override,
-                   c.cruiseControl.cancel,
-                   pcm_accel,
-                   hud_v_cruise,
-                   c.hudControl.lanesVisible,
-                   hud_show_car=c.hudControl.leadVisible,
-                   hud_alert=hud_alert,
-                   snd_beep=snd_beep,
-                   snd_chime=snd_chime)
+    #lead_1 from live20
+    lead_1 = None
+    #check if vehicle is stopped and populate lead_1
+    if self.CS.stopped:
+      for socket, event in self.poller.poll(0):
+        if socket is self.live20:
+          lead_1 = messaging.recv_one(socket).live20.leadOne
+    #if lead_1 exists then lets wait to update carcontroller until lead distance reaches above 10m
+    if lead_1:
+      lead_dist_m = lead_1.dRel
+      if lead_dist_m > 10:
+        self.CC.update(self.sendcan, c.enabled, self.CS, self.frame,
+                       c.actuators,
+                       c.cruiseControl.speedOverride,
+                       c.cruiseControl.override,
+                       c.cruiseControl.cancel,
+                       pcm_accel,
+                       hud_v_cruise,
+                       c.hudControl.lanesVisible,
+                       hud_show_car=c.hudControl.leadVisible,
+                       hud_alert=hud_alert,
+                       snd_beep=snd_beep,
+                       snd_chime=snd_chime)
+    #if lead_1 doesn't exist, then just update carcontroller
+    else:
+      self.CC.update(self.sendcan, c.enabled, self.CS, self.frame,
+                     c.actuators,
+                     c.cruiseControl.speedOverride,
+                     c.cruiseControl.override,
+                     c.cruiseControl.cancel,
+                     pcm_accel,
+                     hud_v_cruise,
+                     c.hudControl.lanesVisible,
+                     hud_show_car=c.hudControl.leadVisible,
+                     hud_alert=hud_alert,
+                     snd_beep=snd_beep,
+                     snd_chime=snd_chime)
 
     self.frame += 1
