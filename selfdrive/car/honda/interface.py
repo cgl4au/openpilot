@@ -304,7 +304,7 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 16.0  # 12.53 as spec
       tire_stiffness_factor = 0.82
-      ret.steerKf = 0.00007818594 # 0.00006 - 0.00007818594
+      ret.steerKf = 0.00006 # 0.00006 - 0.00007818594
       ret.steerKpV, ret.steerKiV = [[0.5], [0.24]]
       ret.steerMPCReactTime = 0.025
       ret.steerMPCDampTime = 0.25
