@@ -309,8 +309,8 @@ class CarInterface(object):
       ret.steerMPCReactTime = 0.015
       ret.steerMPCDampTime = 0.05
       ret.steerReactTime = 0.0
-      ret.steerDampTime = 0.0
-      ret.syncID = 330
+      ret.steerDampTime = 0.05
+      #ret.syncID = 330
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
       ret.longitudinalKiBP = [0., 35.]
