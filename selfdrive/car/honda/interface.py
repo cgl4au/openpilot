@@ -416,7 +416,7 @@ class CarInterface(object):
     ret.startAccel = 0.5
 
     ret.steerActuatorDelay = 0.1
-    ret.steerRateCost = 0.4
+    ret.steerRateCost = 0.35
 
     return ret
 
