@@ -300,7 +300,6 @@ class CarInterface(object):
       stop_and_go = True
       ret.mass = 2987. * CV.LB_TO_KG + std_cargo
       ret.wheelbase = 2.7
-      ret.syncID = 330
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 17.8  # 12.53 as spec
       tire_stiffness_factor = 0.84
