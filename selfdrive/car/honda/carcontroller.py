@@ -8,6 +8,9 @@ from selfdrive.car.honda import hondacan
 from selfdrive.car.honda.values import AH, CruiseButtons, CAR
 from selfdrive.can.packer import CANPacker
 from common.params import Params
+import selfdrive.messaging as messaging
+from selfdrive.services import service_list
+import zmq
 
 def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   # hyst params
@@ -78,6 +81,9 @@ HUDData = namedtuple("HUDData",
 
 class CarController(object):
   def __init__(self, dbc_name, enable_camera=True):
+    context = zmq.Context()
+    self.poller = zmq.Poller()
+    self.live20 = messaging.sub_sock(context, service_list['live20'].port, conflate=True, poller=self.poller)
     self.braking = False
     self.brake_steady = 0.
     self.brake_last = 0.
@@ -86,6 +92,7 @@ class CarController(object):
     self.enable_camera = enable_camera
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
+
     #self.params = Params()
     self.is_metric = Params().get("IsMetric") == "1"
     if self.is_metric:
@@ -104,6 +111,12 @@ class CarController(object):
 
     if not self.enable_camera:
       return
+
+    _live20 = None
+    leadOne = None
+    leadTwo = None
+    dRel = None
+    dRelTwo = None
 
     # *** apply brake hysteresis ***
     brake, self.braking, self.brake_steady = actuator_hystereses(actuators.brake, self.braking, self.brake_steady, CS.v_ego, CS.CP.carFingerprint)
@@ -181,8 +194,24 @@ class CarController(object):
       if pcm_cancel_cmd:
         can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, idx))
       elif CS.stopped:
-        can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx))
-
+        try:
+          for socket, event in self.poller.poll(0):
+            if socket is self.live20:
+              _live20 = messaging.drain_sock(socket)
+              for lv20 in _live20:
+                leadOne = lv20.live20.leadOne
+                dRel = leadOne.dRel
+                leadTwo = lv20.live20.leadTwo
+                dRelTwo = leadTwo.dRel
+                # If lead car is found and when relative distance in meters is greater than 7, spam resume.
+                if leadOne.status or leadTwo.status:
+                  if leadOne.dRel > 7 or leadTwo.dRel > 7:
+                    can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx))
+                else:
+                  # If lead car is not found, just spam anyways if car is stopped.
+                  can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx))
+        except:
+          pass
     else:
       # Send gas and brake commands.
       if (frame % 2) == 0:

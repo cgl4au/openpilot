@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import zmq
-import gc
 import numpy as np
 import numpy.matlib
 import importlib
@@ -49,7 +48,6 @@ class EKFV1D(EKF):
 # FIXME: radard has a memory leak of about 50MB/hr
 # BOUNTY: $100 coupon on shop.comma.ai
 def radard_thread(gctx=None):
-  gc.disable()
   set_realtime_priority(2)
 
   # wait for stats about the car to come in from controls
