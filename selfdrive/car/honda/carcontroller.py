@@ -10,6 +10,8 @@ from selfdrive.can.packer import CANPacker
 from common.params import Params
 from selfdrive.kegman_conf import kegman_conf
 
+kegman = kegman_conf()
+
 def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   # hyst params
   brake_hyst_on = 0.02     # to activate brakes exceed this value
@@ -177,8 +179,6 @@ class CarController(object):
     if (frame % 10) == 0:
       idx = (frame/10) % 4
       can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, idx))
-
-    kegman = kegman_conf()
 
     if CS.CP.radarOffCan:
       # If using stock ACC, spam cancel command to kill gas when OP disengages.
