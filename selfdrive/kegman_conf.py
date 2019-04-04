@@ -36,6 +36,10 @@ class kegman_conf():
         self.config.update({"reactSteer":"-1"})
         self.element_updated = True
 
+      if "leadDistance" not in self.config:
+        self.config.update({"leadDistance":"45.0"})
+        self.element_updated = True
+
       # Force update battery charge limits to higher values for Big Model
       #if self.config['battChargeMin'] != "75":
       #  self.config.update({"battChargeMin":"75"})
@@ -48,7 +52,7 @@ class kegman_conf():
     else:
       self.config = {"cameraOffset":"0.06", "lastTrMode":"1", "battChargeMin":"60", "battChargeMax":"70", \
                      "wheelTouchSeconds":"86400", "battPercOff":"25", "carVoltageMinEonShutdown":"11800", \
-                     "brakeStoppingTarget":"0.25", "tuneGernby":"0", "reactSteer":"-1", "reactMPC":"-1", "dampMPC":"-1", "dampSteer":"-1", \
+                     "brakeStoppingTarget":"0.25", "leadDistance":"45.0","tuneGernby":"0", "reactSteer":"-1", "reactMPC":"-1", "dampMPC":"-1", "dampSteer":"-1", \
                      "Kp":"-1", "Ki":"-1", "Kf":"-1"}
       self.write_config(self.config)
     return self.config

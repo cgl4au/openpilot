@@ -8,8 +8,7 @@ from selfdrive.car.honda import hondacan
 from selfdrive.car.honda.values import AH, CruiseButtons, CAR
 from selfdrive.can.packer import CANPacker
 from common.params import Params
-import sys
-import datetime
+from selfdrive.kegman_conf import kegman_conf
 
 def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   # hyst params
@@ -179,11 +178,13 @@ class CarController(object):
       idx = (frame/10) % 4
       can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, idx))
 
+    kegman = kegman_conf()
+
     if CS.CP.radarOffCan:
       # If using stock ACC, spam cancel command to kill gas when OP disengages.
       if pcm_cancel_cmd:
         can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, idx))
-      elif CS.stopped and CS.lead_distance is not None and CS.lead_distance > 40:
+      elif CS.stopped and CS.lead_distance is not None and CS.lead_distance > float(kegman.conf['leadDistance']):
         can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx))
     else:
       # Send gas and brake commands.
