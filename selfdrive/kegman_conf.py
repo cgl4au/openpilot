@@ -25,7 +25,7 @@ class kegman_conf():
       self.conf['dampMPC'] = str(round(CP.steerMPCDampTime,3))
       write_conf = True
     if self.conf['leadDistance'] == "-1":
-      self.conf['leadDistance'] = "60.0"
+      self.conf['leadDistance'] = "10.0"
     if self.conf['Kp'] == "-1":
       self.conf['Kp'] = str(round(CP.steerKpV[0],3))
       write_conf = True
@@ -72,7 +72,7 @@ class kegman_conf():
         self.element_updated = True
 
       if "leadDistance" not in self.config:
-        self.config.update({"leadDistance":"60.0"})
+        self.config.update({"leadDistance":"10.0"})
         self.element_updated = True
 
       # Force update battery charge limits to higher values for Big Model
@@ -88,7 +88,7 @@ class kegman_conf():
       self.config = {"cameraOffset":"0.06", "lastTrMode":"1", "battChargeMin":"60", "battChargeMax":"70", \
                      "wheelTouchSeconds":"86400", "battPercOff":"25", "carVoltageMinEonShutdown":"11800", \
                      "brakeStoppingTarget":"0.25", "tuneGernby":"0", "reactSteer":"-1", "reactMPC":"-1", \
-                     "dampMPC":"-1", "dampSteer":"-1", "rateFF":"0.2", "angleFF":"1.0", "Kp":"-1", "Ki":"-1", "leadDistance":"60.0"}
+                     "dampMPC":"-1", "dampSteer":"-1", "rateFF":"0.2", "angleFF":"1.0", "Kp":"-1", "Ki":"-1", "leadDistance":"10.0"}
 
       self.write_config(self.config)
     return self.config

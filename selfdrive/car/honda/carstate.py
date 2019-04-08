@@ -201,8 +201,8 @@ class CarState(object):
     self.prev_cruise_buttons = self.cruise_buttons
     self.prev_blinker_on = self.blinker_on
 
-    # add lead distance from radar
-    self.lead_distance = cp.vl["RADAR_HUD"]['LEAD_DISTANCE']
+    # update prev lead distance from radar
+    self.prev_lead_distance = self.lead_distance
 
     self.prev_left_blinker_on = self.left_blinker_on
     self.prev_right_blinker_on = self.right_blinker_on

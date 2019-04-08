@@ -84,6 +84,7 @@ class CarController(object):
     self.braking = False
     self.brake_steady = 0.
     self.brake_last = 0.
+    self.prev_lead_distance = 0.
     self.apply_brake_last = 0
     self.last_pump_ts = 0
     self.enable_camera = enable_camera
@@ -184,8 +185,11 @@ class CarController(object):
       # If using stock ACC, spam cancel command to kill gas when OP disengages.
       if pcm_cancel_cmd:
         can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, idx))
-      elif CS.stopped and CS.lead_distance is not None and CS.lead_distance > float(kegman.conf['leadDistance']):
-        can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx))
+      elif CS.stopped:
+        if CS.lead_distance > (self.prev_lead_distance + float(kegman.conf['leadDistance'])):
+          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx))
+      else:
+        self.prev_lead_distance = CS.lead_distance
     else:
       # Send gas and brake commands.
       if (frame % 2) == 0:
