@@ -343,8 +343,8 @@ class CarState(object):
     if self.cruise_setting == 3:
       if cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"] == 0:
         self.trMode = (self.trMode + 1 ) % 4
-        self.k.conf['lastTrMode'] = str(self.trMode)   # write last distance bar setting to file
-        self.k.write_config(self.k.conf) 
+        # self.kegman.conf['lastTrMode'] = str(self.trMode)   # write last distance bar setting to file
+        # self.kegman.write_config(self.kegman.conf) 
         
     # when user presses LKAS button on steering wheel
     if self.cruise_setting == 1:
