@@ -159,6 +159,8 @@ class CarState(object):
     self.brake_switch_prev = 0
     self.brake_switch_ts = 0
 
+    self.lead_distance = 255
+
     self.cruise_buttons = 0
     self.cruise_setting = 0
     self.v_cruise_pcm_prev = 0
