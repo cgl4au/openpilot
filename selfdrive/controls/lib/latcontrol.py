@@ -31,6 +31,15 @@ class LatControl(object):
     self.rate_mode = 0.0
     self.angle_mode = 0.0
     self.previous_integral = 0.0
+    self.last_cloudlog_t = 0.0
+    self.angle_steers_des = 0.
+    self.angle_ff_ratio = 0.0
+    self.standard_ff_ratio = 0.0
+    self.angle_ff_gain = 1.0
+    self.rate_ff_gain = 0.01
+    self.average_angle_steers = 0.
+    self.angle_steers_noise = _NOISE_THRESHOLD
+    self.angle_ff_bp = [[0.5, 5.0],[0.0, 1.0]]
 
     KpV = [interp(25.0, CP.steerKpBP, CP.steerKpV)]
     KiV = [interp(25.0, CP.steerKiBP, CP.steerKiV)]
