@@ -266,7 +266,7 @@ def state_control(plan, path_plan, CS, CP, state, events, v_cruise_kph, v_cruise
   actuators.steer, actuators.steerAngle = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringPressed, CP, VM, path_plan)
 
   # Send a "steering required alert" if saturation count has reached the limit
-  if LaC.sat_flag and CP.steerLimitAlert and CS.lkMode and not CS.leftBlinker and not CS.rightBlinker:
+  if LaC.sat_flag and CP.steerLimitAlert:
     AM.add("steerSaturated", enabled)
 
   # Parse permanent warnings to display constantly
