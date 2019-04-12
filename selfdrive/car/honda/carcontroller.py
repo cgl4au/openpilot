@@ -145,15 +145,6 @@ class CarController(object):
       snd_beep = 0
       snd_chime = 0
 
-    if CS.lead_distance > 190 and CS.lead_distance < 255:
-      CS.read_distance_lines = 1
-    elif CS.lead_distance > 140 and CS.lead_distance < 190:
-      CS.read_distance_lines = 2
-    elif CS.lead_distance > 65 and CS.lead_distance < 100:
-      CS.read_distance_lines = 3
-    elif CS.lead_distance > 0 and CS.lead_distance < 65:
-      CS.read_distance_lines = 4
-
     #print chime, alert_id, hud_alert
     fcw_display, steer_required, acc_alert = process_hud_alert(hud_alert)
 
