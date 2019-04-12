@@ -153,6 +153,9 @@ while True:
   if float(kegman.conf['reactSteer']) > 1.0:
     kegman.conf['reactSteer'] = "1.0"
 
+  if float(kegman.conf['rateFF']) <= 0.0:
+    kegman.conf['rateFF'] = "0.001"
+
   if float(kegman.conf['Ki']) < 0 and float(kegman.conf['Ki']) != -1:
     kegman.conf['Ki'] = "0"
 
