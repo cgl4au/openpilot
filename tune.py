@@ -38,7 +38,7 @@ button_delay = 0.2
 kegman = kegman_conf()
 #kegman.conf['tuneGernby'] = "1"
 #kegman.write_config(kegman.conf)
-param = ["tuneGernby", "reactMPC", "dampMPC", "rateFF", "angleFF", "Kp", "Ki", "cameraOffset"]
+param = ["tuneGernby", "reactMPC", "dampMPC", "rateFF", "Kp", "Ki", "cameraOffset"]
 
 j = 0
 while True:
@@ -123,23 +123,14 @@ while True:
   if float(kegman.conf['tuneGernby']) != 1 and float(kegman.conf['tuneGernby']) != 0:
     kegman.conf['tuneGernby'] = "0"
 
-  if float(kegman.conf['dampSteer']) < 0 and float(kegman.conf['dampSteer']) != -1:
-    kegman.conf['dampSteer'] = "0"
-
   if float(kegman.conf['dampMPC']) < 0 and float(kegman.conf['dampMPC']) != -1:
     kegman.conf['dampMPC'] = "0"
 
   if float(kegman.conf['rateFF']) < 0:
     kegman.conf['rateFF'] = "0.0"
 
-  if float(kegman.conf['angleFF']) < 0:
-    kegman.conf['angleFF'] = "0.0"
-
   if float(kegman.conf['dampMPC']) > 1.0:
     kegman.conf['dampMPC'] = "1.0"
-
-  if float(kegman.conf['dampSteer']) > 1.0:
-    kegman.conf['dampSteer'] = "1.0"
 
   if float(kegman.conf['reactMPC']) < -0.99 and float(kegman.conf['reactMPC']) != -1:
     kegman.conf['reactMPC'] = "-0.99"
@@ -147,14 +138,8 @@ while True:
   if float(kegman.conf['reactMPC']) > 1.0:
     kegman.conf['reactMPC'] = "1.0"
 
-  if float(kegman.conf['reactSteer']) < -0.99 and float(kegman.conf['reactSteer']) != -1:
-    kegman.conf['reactSteer'] = "-0.99"
-
-  if float(kegman.conf['reactSteer']) > 1.0:
-    kegman.conf['reactSteer'] = "1.0"
-
   if float(kegman.conf['rateFF']) <= 0.0:
-    kegman.conf['rateFF'] = "0.001"
+    kegman.conf['rateFF'] = "0.01"
 
   if float(kegman.conf['Ki']) < 0 and float(kegman.conf['Ki']) != -1:
     kegman.conf['Ki'] = "0"
