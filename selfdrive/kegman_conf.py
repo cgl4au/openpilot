@@ -9,23 +9,13 @@ class kegman_conf():
 
   def init_config(self, CP):
     write_conf = False
-    if self.conf['tuneGernby'] == "-1":
+    if self.conf['tuneGernby'] != "1":
       self.conf['tuneGernby'] = str(1)
       write_conf = True
-    if self.conf['rateFF'] == "-1":
-      self.conf['rateFF'] = "0.2"
-      write_conf = True
-    if self.conf['angleFF'] == "-1":
-      self.conf['angleFF'] = "1.0"
-      write_conf = True
-    if self.conf['reactMPC'] == "-1":
+    if float(self.conf['reactMPC']) <= 0.0 and float(self.conf['dampMPC']) <= 0.0:
       self.conf['reactMPC'] = str(round(CP.steerMPCReactTime,3))
-      write_conf = True
-    if self.conf['dampMPC'] == "-1":
       self.conf['dampMPC'] = str(round(CP.steerMPCDampTime,3))
       write_conf = True
-    if self.conf['leadDistance'] == "-1":
-      self.conf['leadDistance'] = "10.0"
     if self.conf['Kp'] == "-1":
       self.conf['Kp'] = str(round(CP.steerKpV[0],3))
       write_conf = True
@@ -35,6 +25,8 @@ class kegman_conf():
     if self.conf['rateFF'] == "-1":
       self.conf['rateFF'] = "0.01"
       write_conf = True
+    if self.conf['leadDistance'] == "-1":
+      self.conf['leadDistance'] = "10.0"
 
     if write_conf:
       self.write_config(self.config)
@@ -60,7 +52,7 @@ class kegman_conf():
         self.element_updated = True
 
       if "rateFF" not in self.config:
-        self.config.update({"rateFF":"0.2"})
+        self.config.update({"rateFF":"0.01"})
         self.config.update({"angleFF":"1.0"})
         self.element_updated = True
 
