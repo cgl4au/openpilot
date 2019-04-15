@@ -1,26 +1,25 @@
 #!/usr/bin/env python
 import zmq
 import time
+import os
 import numpy as np
+#import curl
 import math
-from influxdb import InfluxDBClient, SeriesHelper
+import json
+import requests
+#from influxdb import InfluxDBClient, SeriesHelper
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list
 from selfdrive.controls.lib.latcontrol_helpers import calc_lookahead_offset
 from selfdrive.controls.lib.pathplanner import PathPlanner
 from selfdrive.controls.lib.vehicle_model import VehicleModel
-from common.realtime import set_realtime_priority, Ratekeeper
-from selfdrive.controls.lib.latcontrol_helpers import model_polyfit, calc_desired_path, compute_path_pinv, calc_poly_curvature
+#from common.realtime import set_realtime_priority, Ratekeeper
+from selfdrive.controls.lib.latcontrol_helpers import model_polyfit, calc_desired_path, compute_path_pinv
 import importlib
 from collections import defaultdict, deque
-from fastcluster import linkage_vector
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 from cereal import car
 from common.params import Params
-from selfdrive.kegman_conf import kegman_conf
-import requests
-
-kegman = kegman_conf()
 
 try:
   from selfdrive.kegman_conf import kegman_conf
@@ -28,14 +27,14 @@ except:
   pass
 
 def dashboard_thread(rate=300):
-  set_realtime_priority(5)
+  #set_realtime_priority(5)
 
-  USER = ''
-  PASSWORD = ''
-  DBNAME = 'carDB'
-  #influx = InfluxDBClient('192.168.1.61', 8086, USER, PASSWORD, DBNAME)
-  #influx = InfluxDBClient('192.168.43.221', 8086, USER, PASSWORD, DBNAME)
-  influx = InfluxDBClient('192.168.137.1', 8086, USER, PASSWORD, DBNAME)
+  kegman_valid = True
+
+  #url_string = 'http://192.168.1.61:8086/write?db=carDB'
+  #url_string = 'http://192.168.43.221:8086/write?db=carDB'
+  #url_string = 'http://192.168.137.1:8086/write?db=carDB'
+  url_string = 'http://kevo.live:8086/write?db=carDB'
 
   context = zmq.Context()
   poller = zmq.Poller()
@@ -68,6 +67,7 @@ def dashboard_thread(rate=300):
   #model = "disabled"
   live20 = "disabled"
 
+  grafana_user = ""
   _model = None
   _live100 = None
   _liveParameters = None
@@ -82,7 +82,6 @@ def dashboard_thread(rate=300):
   _sendcan = None
   _androidLog = None
 
-  params = Params()
   frame_count = 0
   can_count = 0
   sample_str = ""
@@ -99,14 +98,20 @@ def dashboard_thread(rate=300):
   prev_r_sum = 0
   prev_p_sum = 0
 
-  grafana_user = kegman.conf['grafanaUser']
+  params = Params()
 
   current_rate = rate
-  rk = Ratekeeper(current_rate, print_delay_threshold=np.inf)
+  #rk = Ratekeeper(current_rate, print_delay_threshold=np.inf)
 
   kegman_counter = 0
   monoTimeOffset = 0
   receiveTime = 0
+  try:
+    kegman = kegman_conf()
+    grafana_user = kegman.conf['grafanaUser']
+  except:
+    pass
+
 
   CP = car.CarParams.from_bytes(Params().get("CarParams", block=True))
   VM = VehicleModel(CP)
@@ -137,8 +142,9 @@ def dashboard_thread(rate=300):
                 receiveTime = int(monoTimeOffset + l100.logMonoTime)
                 print(int(time.time() * 1000000000), receiveTime, monoTimeOffset, l100.logMonoTime)
 
-              influxLineString += (grafana_user+",sources=capnp apply_steer=%d,orig_apply_steer=%d,angle_steers_des=%1.1f,angle_steers=%1.1f,p=%1.1f,i=%1.1f,f=%1.1f %s\n" %
-                          (l100.live100.applySteer, l100.live100.origApplySteer, l100.live100.angleSteersDes, l100.live100.angleSteers, l100.live100.upSteer * 100.0, l100.live100.uiSteer * 100.0, l100.live100.ufSteer * 100.0, receiveTime))
+              influxLineString += (grafana_user + ",sources=capnp angle_steers_des=%1.1f,angle_steers=%1.1f,vEgo=%1.1f,p=%1.1f,i=%1.1f,f=%1.1f %s\n" %
+                          (l100.live100.angleSteersDes, l100.live100.angleSteers, vEgo, l100.live100.upSteer * 100.0, l100.live100.uiSteer * 100.0, l100.live100.ufSteer * 100.0, receiveTime))
+
               frame_count += 1
 
           '''print(_live100)
@@ -236,16 +242,9 @@ def dashboard_thread(rate=300):
             l_curv2 = calc_poly_curvature(l_poly_near)
             r_curv2 = calc_poly_curvature(r_poly_near)
             '''
-            #left_curv = calc_poly_curvature([lp[0], lp[9], lp[19], lp[29], lp[39],lp[49]])
-            #path_curv = calc_poly_curvature([pp[0], pp[9], pp[19], pp[29], pp[39],pp[49]])
-            #path_curv = calc_poly_curvature(md.path.points)
-            #right_curv = calc_poly_curvature([rp[0], rp[9], rp[19], rp[29], rp[39],rp[49]])  #calc_poly_curvature(md.rightLane.points)
-            #print(left_curv, path_curv, right_curv)
             for i in range(5,50,5):
               influxLineString += (",l%d=%1.3f,p%d=%1.3f,r%d=%1.3f" % (i, md.leftLane.points[i], i, md.path.points[i], i, md.rightLane.points[i]))
-            #influxLineString += (",left_curv=%1.1f %s\n" % (left_curv, receiveTime))
-            #influxLineString += (",vEgo=%1.1f,vCurv=%1.5f,lstd=%1.2f,rstd=%1.2f,pstd=%1.2f,lsum=%d,rsum=%d,psum=%d,lchange=%d,rchange=%d,pchange=%d,lProb=%1.2f,pProb=%1.2f,rProb=%1.2f,p_curv1=%1.5f,l_curv1=%1.5f,r_curv1=%1.5f,p_curv2=%1.5f,l_curv2=%1.5f,r_curv2=%1.5f,v_curv=%1.5f,p_curv=%1.5f,l_curv=%1.5f,r_curv=%1.5f %s\n" % \
-            #     (vEgo, v_curv, md.leftLane.std,md.rightLane.std,md.path.std,l_sum, r_sum, p_sum, l_change,r_change,p_change,md.leftLane.prob, md.path.prob, md.rightLane.prob,p_curv1,l_curv1,r_curv1,p_curv2,l_curv2,r_curv2, v_curv, p_curv,l_curv, r_curv, receiveTime))
+
             influxLineString += (",vEgo=%1.1f,lstd=%1.1f,rstd=%1.1f,lsum=%d,rsum=%d,psum=%d,lchange=%d,rchange=%d,pchange=%d,lProb=%1.2f,rProb=%1.2f,v_curv=%1.5f,p_curv=%1.5f,l_curv=%1.5f,r_curv=%1.5f %s\n" % \
                  (vEgo, md.leftLane.std, md.rightLane.std, l_sum, r_sum, p_sum, l_change,r_change,p_change,md.leftLane.prob, md.rightLane.prob,v_curv, p_curv,l_curv, r_curv, receiveTime))
 
@@ -283,7 +282,7 @@ def dashboard_thread(rate=300):
                 sample_str += ","
             sample_str = ("angleOffset=%1.2f,angleOffsetAverage=%1.3f,stiffnessFactor=%1.3f,steerRatio=%1.3f,laneWidtb=%1.1f" %
                         (lp.angleOffset, lp.angleOffsetAverage, lp.stiffnessFactor, lp.steerRatio, lp.laneWidth))
-            influxLineString += (grafana_user+",sources=capnp " + sample_str + " %s\n" % receiveTime)
+            influxLineString += (grafana_user + ",sources=capnp " + sample_str + " %s\n" % receiveTime)
             sample_str = ""
             frame_count += 1
 
@@ -296,15 +295,10 @@ def dashboard_thread(rate=300):
             #r = _pathPlan.pathPlan.mpcRates
             p = _pathPlan.pathPlan
 
-            #sample_str = ("lane_width=%1.2f,lpoly2=%1.3f,rpoly2=%1.3f,cpoly2=%1.3f,dpoly2=%1.3f,lpoly3=%1.3f,rpoly3=%1.3f,cpoly3=%1.3f,dpoly3=%1.3f,cProb=%1.3f,lProb=%1.3f,rProb=%1.3f,mpc1=%1.2f,mpc2=%1.2f,mpc3=%1.2f,mpc4=%1.2f,mpc5=%1.2f,mpc6=%1.2f,mpc7=%1.2f,mpc8=%1.2f,mpc9=%1.2f,mpc10=%1.2f,mpc11=%1.2f,mpc12=%1.2f,mpc13=%1.2f,mpc14=%1.2f,mpc15=%1.2f,mpc16=%1.2f,mpc17=%1.2f,mpc18=%1.2f" %
-            #            (_pathPlan.pathPlan.laneWidth, _pathPlan.pathPlan.lPoly[2], _pathPlan.pathPlan.rPoly[2], _pathPlan.pathPlan.cPoly[2], _pathPlan.pathPlan.dPoly[2],_pathPlan.pathPlan.lPoly[3], _pathPlan.pathPlan.rPoly[3], _pathPlan.pathPlan.cPoly[3], _pathPlan.pathPlan.dPoly[3],
-            #                  _pathPlan.pathPlan.cProb,  _pathPlan.pathPlan.lProb,  _pathPlan.pathPlan.rProb, a[1], a[2], a[3],
-            #                  a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18]))
             sample_str = ("lane_width=%1.2f,lpoly0=%1.6f,rpoly0=%1.6f,cpoly0=%1.6f,dpoly0=%1.6f,lpoly1=%1.5f,rpoly1=%1.5f,cpoly1=%1.5f,dpoly1=%1.5f,lpoly2=%1.4f,rpoly2=%1.4f,cpoly2=%1.4f,dpoly2=%1.4f,lpoly3=%1.3f,rpoly3=%1.3f,cpoly3=%1.3f,dpoly3=%1.3f,cProb=%1.3f,lProb=%1.3f,rProb=%1.3f,mpc0=%1.2f,mpc1=%1.2f,mpc2=%1.2f,mpc3=%1.2f,mpc4=%1.2f,mpc5=%1.2f,mpc6=%1.2f" %
                         (p.laneWidth, p.lPoly[0], p.rPoly[0], p.cPoly[0], p.dPoly[0], p.lPoly[1], p.rPoly[1], p.cPoly[1], p.dPoly[1], p.lPoly[2], p.rPoly[2], p.cPoly[2], p.dPoly[2],p.lPoly[3], p.rPoly[3], p.cPoly[3], p.dPoly[3],
                               p.cProb,  p.lProb,  p.rProb, a[0], a[1], a[2], a[3], a[4], a[5], a[6]))
-            
-            influxLineString += (grafana_user+",sources=capnp " + sample_str + " %s\n" % receiveTime)
+            influxLineString += (grafana_user + ",sources=capnp " + sample_str + " %s\n" % receiveTime)
             sample_str = ""
             frame_count += 1
 
@@ -476,24 +470,30 @@ def dashboard_thread(rate=300):
         #  print(_androidLog)
 
         #print(influxLineString)
-        if sample_str != "":
-          '''
+        if sample_str != "" or influxLineString != "":
           kegman_counter += 1
-          if kegman_counter == 300:
+          if kegman_counter == 50 and kegman_valid:
             kegman_counter = 0
-            try:
-              kegman = kegman_conf()
-              mpc_project = kegman.conf['reactMPC']
-              mpc_smooth = kegman.conf['dampMPC']
-              steer_project = kegman.conf['reactSteer']
-              steer_smooth = kegman.conf['dampSteer']
-              steerKpV = kegman.conf['Kp']
-              steerKiV = kegman.conf['Ki']
-              sample_str += (",mpc_project=%s,mpc_smooth=%s,steer_project=%s,steer_smooth=%s,KpV=%s,KiV=%s" % (mpc_project,mpc_smooth,steer_project,steer_smooth, steerKpV, steerKiV))
-            except:
-              pass
-          '''
-          influxLineString += (grafana_user+",sources=capnp " + sample_str + " %s\n" % receiveTime)
+            #try:
+            if os.path.isfile('/data/kegman.json'):
+              with open('/data/kegman.json', 'r') as f:
+                config = json.load(f)
+                reactMPC = config['reactMPC']
+                dampMPC = config['dampMPC']
+                #steer_project = config['reactSteer']
+                #steer_smooth = config['dampSteer']
+                steerKpV = config['Kp']
+                steerKiV = config['Ki']
+                rateFF = config['rateFF']
+                print((grafana_user + ",sources=capnp dampMPC=%s,reactMPC=%s,KpV=%s,KiV=%s,rateFF=%s %s\n" % \
+                      (dampMPC, reactMPC, steerKpV, steerKiV, rateFF, receiveTime)))
+                influxLineString += (grafana_user + ",sources=capnp dampMPC=%s,reactMPC=%s,KpV=%s,KiV=%s,rateFF=%s %s\n" % \
+                      (dampMPC, reactMPC, steerKpV, steerKiV, rateFF, receiveTime))
+
+            #except:
+            #  kegman_valid = False
+
+          #influxLineString += (dongle_id + ",sources=capnp " + sample_str + " %s\n" % receiveTime)
           frame_count += 1
           sample_str = ""
         if canDataString != "":
@@ -501,20 +501,10 @@ def dashboard_thread(rate=300):
           frame_count += 1
           canDataString = ""
 
-        if frame_count >= 10:
-          #print(influxLineString)
-          headers = { 'Content-type': 'application/octet-stream', 'Accept': 'text/plain' }
-          try:
-              influx.request("write",'POST', {'db':DBNAME}, influxLineString.encode('utf-8'), 204, headers)
-              if current_rate != rate:
-                current_rate = rate
-                rk = Ratekeeper(current_rate, print_delay_threshold=np.inf)
-              print ('%d %d' % (frame_count, len(influxLineString)))
-          except:
-              if current_rate != 1:
-                current_rate = 1
-                rk = Ratekeeper(current_rate, print_delay_threshold=np.inf)
-              continue
+        if frame_count >= 100:
+          r = requests.post(url_string, data=influxLineString)
+          print ('%d %d  %s' % (frame_count, len(influxLineString), r))
+
           frame_count = 0
           can_count = 0
           influxLineString = ""
