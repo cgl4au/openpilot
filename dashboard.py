@@ -17,6 +17,10 @@ from fastcluster import linkage_vector
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 from cereal import car
 from common.params import Params
+from selfdrive.kegman_conf import kegman_conf
+import requests
+
+kegman = kegman_conf()
 
 try:
   from selfdrive.kegman_conf import kegman_conf
@@ -78,6 +82,7 @@ def dashboard_thread(rate=300):
   _sendcan = None
   _androidLog = None
 
+  params = Params()
   frame_count = 0
   can_count = 0
   sample_str = ""
@@ -93,6 +98,8 @@ def dashboard_thread(rate=300):
   prev_l_sum = 0
   prev_r_sum = 0
   prev_p_sum = 0
+
+  grafana_user = kegman.conf['grafanaUser']
 
   current_rate = rate
   rk = Ratekeeper(current_rate, print_delay_threshold=np.inf)
@@ -129,20 +136,9 @@ def dashboard_thread(rate=300):
                 monoTimeOffset = (time.time() * 1000000000) - l100.logMonoTime
                 receiveTime = int(monoTimeOffset + l100.logMonoTime)
                 print(int(time.time() * 1000000000), receiveTime, monoTimeOffset, l100.logMonoTime)
-                #receiveTime = 1 / 0
-              abs_error = abs(l100.live100.angleSteers - l100.live100.angleSteersDes)
-              angle_error_noise = ((99. * angle_error_noise) + (math.pow(abs_error, 2.))) / 100.
-              abs_desired_change = abs(l100.live100.angleSteersDes - last_desired)
-              desired_angle_change_noise = ((99. * desired_angle_change_noise) + (math.pow(abs_desired_change, 2.))) / 100.
-              abs_angle_change = abs(l100.live100.angleSteersDes - last_actual)
-              actual_angle_change_noise = ((99. * actual_angle_change_noise) + (math.pow(abs_angle_change, 2.))) / 100.
-              last_desired = l100.live100.angleSteersDes
-              last_actual = l100.live100.angleSteers
-              v_curv = l100.live100.curvature
 
-              influxLineString += ("opData,sources=capnp angleGain=%1.2f,rateGain=%1.5f,actualNoise=%1.3f,ff_standard=%1.2f,ff_rate=%1.3f,ff_angle=%1.3f,ang_err_noise=%1.1f,des_noise=%1.1f,ang_noise=%1.1f,angle_steers_des=%1.2f,angle_steers=%1.2f,dampened_angle_steers_des=%1.2f,v_ego=%1.2f,steer_override=%1.2f,v_ego=%1.4f,p=%1.2f,i=%1.4f,f=%1.4f,cumLagMs=%1.2f,vCruise=%1.2f %s\n" %
-                          (l100.live100.angleFFGain, l100.live100.rateFFGain, l100.live100.angleSteersNoise, l100.live100.standardFFRatio, 1.0 - l100.live100.angleFFRatio, l100.live100.angleFFRatio, angle_error_noise, desired_angle_change_noise, actual_angle_change_noise, l100.live100.angleSteersDes, l100.live100.angleSteers, l100.live100.dampAngleSteersDes, l100.live100.vEgo, l100.live100.steerOverride, l100.live100.vPid,
-                          l100.live100.upSteer, l100.live100.uiSteer, l100.live100.ufSteer, l100.live100.cumLagMs, l100.live100.vCruise, receiveTime))
+              influxLineString += (grafana_user+",sources=capnp apply_steer=%d,orig_apply_steer=%d,angle_steers_des=%1.1f,angle_steers=%1.1f,p=%1.1f,i=%1.1f,f=%1.1f %s\n" %
+                          (l100.live100.applySteer, l100.live100.origApplySteer, l100.live100.angleSteersDes, l100.live100.angleSteers, l100.live100.upSteer * 100.0, l100.live100.uiSteer * 100.0, l100.live100.ufSteer * 100.0, receiveTime))
               frame_count += 1
 
           '''print(_live100)
@@ -287,7 +283,7 @@ def dashboard_thread(rate=300):
                 sample_str += ","
             sample_str = ("angleOffset=%1.2f,angleOffsetAverage=%1.3f,stiffnessFactor=%1.3f,steerRatio=%1.3f,laneWidtb=%1.1f" %
                         (lp.angleOffset, lp.angleOffsetAverage, lp.stiffnessFactor, lp.steerRatio, lp.laneWidth))
-            influxLineString += ("opData,sources=capnp " + sample_str + " %s\n" % receiveTime)
+            influxLineString += (grafana_user+",sources=capnp " + sample_str + " %s\n" % receiveTime)
             sample_str = ""
             frame_count += 1
 
@@ -307,7 +303,8 @@ def dashboard_thread(rate=300):
             sample_str = ("lane_width=%1.2f,lpoly0=%1.6f,rpoly0=%1.6f,cpoly0=%1.6f,dpoly0=%1.6f,lpoly1=%1.5f,rpoly1=%1.5f,cpoly1=%1.5f,dpoly1=%1.5f,lpoly2=%1.4f,rpoly2=%1.4f,cpoly2=%1.4f,dpoly2=%1.4f,lpoly3=%1.3f,rpoly3=%1.3f,cpoly3=%1.3f,dpoly3=%1.3f,cProb=%1.3f,lProb=%1.3f,rProb=%1.3f,mpc0=%1.2f,mpc1=%1.2f,mpc2=%1.2f,mpc3=%1.2f,mpc4=%1.2f,mpc5=%1.2f,mpc6=%1.2f" %
                         (p.laneWidth, p.lPoly[0], p.rPoly[0], p.cPoly[0], p.dPoly[0], p.lPoly[1], p.rPoly[1], p.cPoly[1], p.dPoly[1], p.lPoly[2], p.rPoly[2], p.cPoly[2], p.dPoly[2],p.lPoly[3], p.rPoly[3], p.cPoly[3], p.dPoly[3],
                               p.cProb,  p.lProb,  p.rProb, a[0], a[1], a[2], a[3], a[4], a[5], a[6]))
-            influxLineString += ("opData,sources=capnp " + sample_str + " %s\n" % receiveTime)
+            
+            influxLineString += (grafana_user+",sources=capnp " + sample_str + " %s\n" % receiveTime)
             sample_str = ""
             frame_count += 1
 
@@ -496,7 +493,7 @@ def dashboard_thread(rate=300):
             except:
               pass
           '''
-          influxLineString += ("opData,sources=capnp " + sample_str + " %s\n" % receiveTime)
+          influxLineString += (grafana_user+",sources=capnp " + sample_str + " %s\n" % receiveTime)
           frame_count += 1
           sample_str = ""
         if canDataString != "":

@@ -38,6 +38,9 @@ class kegman_conf():
       with open('/data/kegman.json', 'r') as f:
         self.config = json.load(f)
 
+      if "grafanaUser" not in self.config:
+        self.config.update({"grafanaUser":"noUser"})
+        self.element_updated = True
       if "battPercOff" not in self.config:
         self.config.update({"battPercOff":"25"})
         self.config.update({"carVoltageMinEonShutdown":"11800"})
@@ -86,7 +89,7 @@ class kegman_conf():
       self.config = {"cameraOffset":"0.06", "lastTrMode":"1", "battChargeMin":"60", "battChargeMax":"70", \
                      "wheelTouchSeconds":"86400", "battPercOff":"25", "carVoltageMinEonShutdown":"11800", \
                      "brakeStoppingTarget":"0.25", "tuneGernby":"0", "reactMPC":"-1", \
-                     "dampMPC":"-1", "rateFF":"0.01", "Kp":"-1", "Ki":"-1", "leadDistance":"10.0"}
+                     "dampMPC":"-1", "rateFF":"0.01", "Kp":"-1", "Ki":"-1", "leadDistance":"10.0", "grafanaUser":"noUser"}
 
       self.write_config(self.config)
     return self.config
