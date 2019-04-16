@@ -50,7 +50,7 @@ try:
     user_name = text_file.read()
     cmd = '/usr/local/bin/python /data/openpilot/dashboard.py'
     process = subprocess.Popen(cmd, shell=True,
-                               stdout=subprocess.PIPE,
+                               stdout=None,
                                stderr=None,
                                close_fds=True)
   text_file.close()
