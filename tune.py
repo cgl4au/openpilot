@@ -45,12 +45,13 @@ param = ["tuneGernby", "reactMPC", "dampMPC", "rateFF", "Kp", "Ki"]
 user_name = ""
 
 try:
+  devnull = open(os.devnull, 'w')
   text_file = open("/data/username", "r")
   if text_file.mode == "r":
     user_name = text_file.read()
     cmd = '/usr/local/bin/python /data/openpilot/dashboard.py'
     process = subprocess.Popen(cmd, shell=True,
-                               stdout=None,
+                               stdout=devnull,
                                stderr=None,
                                close_fds=True)
   text_file.close()
@@ -128,6 +129,7 @@ while True:
       j = len(param) - 1
 
   elif (char == "z"):
+    process.kill()
     break
 
 
@@ -168,3 +170,5 @@ while True:
     kegman.write_config(kegman.conf)
 
   time.sleep(button_delay)
+else:
+  process.kill()
