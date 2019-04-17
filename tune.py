@@ -49,10 +49,6 @@ try:
   if text_file.mode == "r":
     user_name = text_file.read()
     if (user_name == ""):
-      user_name = raw_input('Username: ').strip() if sys.version_info.major == 2 else input('Username: ').strip()
-      text_file = open("/data/username", "w")
-      text_file.write(user_name)
-      text_file.close()
       sys.exit()
     cmd = '/usr/local/bin/python /data/openpilot/dashboard.py'
     process = subprocess.Popen(cmd, shell=True,
