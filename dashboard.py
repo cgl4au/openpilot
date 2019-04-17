@@ -93,10 +93,12 @@ def dashboard_thread(rate=100):
   prev_p_sum = 0
 
   try:
-    if os.path.isfile('/data/kegman.json'):
-      with open('/data/kegman.json', 'r') as f:
-        config = json.load(f)
-        user_id = config['userID']
+    devnull = open(os.devnull, 'w')
+    text_file = open("/data/username", "r")
+    if text_file.mode == "r":
+      user_name = text_file.read()
+      if (user_name == ""):
+        user_id = params.get("DongleId")
     else:
         params = Params()
         user_id = params.get("DongleId")
