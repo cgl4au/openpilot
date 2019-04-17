@@ -175,8 +175,10 @@ class CarInterface(object):
     rotationalInertia_civic = 2500
     tireStiffnessFront_civic = 192150
     tireStiffnessRear_civic = 202500
-    ret.steerMPCReactTime = 0.025     # increase total MPC projected time by 25 ms
+    ret.steerMPCReactTime = 0.015     # increase total MPC projected time by 25 ms
     ret.steerMPCDampTime = 0.15       # dampen desired angle over 250ms (5 mpc cycles)
+    ret.steerReactTime = -0.01
+    ret.steerDampTime = 0.20
 
     # Optimized car params: tire_stiffness_factor and steerRatio are a result of a vehicle
     # model optimization process. Certain Hondas have an extra steering sensor at the bottom
@@ -283,7 +285,7 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 15  # 12.53 as spec
       tire_stiffness_factor = 0.82
-      ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
+      ret.steerKpV, ret.steerKiV = [[0.8], [0.24]]
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
       ret.longitudinalKiBP = [0., 35.]
