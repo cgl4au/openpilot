@@ -96,8 +96,8 @@ def dashboard_thread(rate=100):
     devnull = open(os.devnull, 'w')
     text_file = open("/data/username", "r")
     if text_file.mode == "r":
-      user_name = text_file.read()
-      if (user_name == ""):
+      user_id = text_file.read()
+      if (user_id == ""):
         user_id = params.get("DongleId")
     else:
         params = Params()
