@@ -253,7 +253,11 @@ typedef struct UIState {
 
   GLuint frame_program;
   GLuint frame_texs[UI_BUF_COUNT];
+  EGLImageKHR khr[UI_BUF_COUNT];
+  void *priv_hnds[UI_BUF_COUNT];
   GLuint frame_front_texs[UI_BUF_COUNT];
+  EGLImageKHR khr_front[UI_BUF_COUNT];
+  void *priv_hnds_front[UI_BUF_COUNT];
 
   GLint frame_pos_loc, frame_texcoord_loc;
   GLint frame_texture_loc, frame_transform_loc;
@@ -268,9 +272,6 @@ typedef struct UIState {
 
   unsigned int rgb_front_width, rgb_front_height, rgb_front_stride;
   size_t rgb_front_buf_len;
-
-  bool intrinsic_matrix_loaded;
-  mat3 intrinsic_matrix;
 
   UIScene scene;
 
@@ -596,38 +597,6 @@ static void ui_init(UIState *s) {
       s->passive = value[0] == '1';
       free(value);
     }
-  }
-
-}
-
-// If the intrinsics are in the params entry, this copies them to
-// intrinsic_matrix and returns true.  Otherwise returns false.
-static bool try_load_intrinsics(mat3 *intrinsic_matrix) {
-  char *value;
-  const int result = read_db_value(NULL, "CloudCalibration", &value, NULL);
-
-  if (result == 0) {
-    JsonNode* calibration_json = json_decode(value);
-    free(value);
-
-    JsonNode *intrinsic_json =
-        json_find_member(calibration_json, "intrinsic_matrix");
-
-    if (intrinsic_json == NULL || intrinsic_json->tag != JSON_ARRAY) {
-      json_delete(calibration_json);
-      return false;
-    }
-
-    int i = 0;
-    JsonNode* json_num;
-    json_foreach(json_num, intrinsic_json) {
-      intrinsic_matrix->v[i++] = json_num->number_;
-    }
-    json_delete(calibration_json);
-
-    return true;
-  } else {
-    return false;
   }
 }
 
@@ -1630,8 +1599,8 @@ static void ui_draw_vision_speed(UIState *s) {
     nvgMoveTo(s->vg, viz_speed_x, box_y + header_h/4);
     nvgLineTo(s->vg, viz_speed_x - viz_speed_w/2, box_y + header_h/4 + header_h/4);
     nvgLineTo(s->vg, viz_speed_x, box_y + header_h/2 + header_h/4);
-    nvgLineTo(s->vg, viz_speed_x, box_y + header_h/4);
-    nvgFillColor(s->vg, nvgRGBA(23,134,68,scene->blinker_blinkingrate>=50?120:60)); 
+    nvgClosePath(s->vg);
+    nvgFillColor(s->vg, nvgRGBA(23,134,68,scene->blinker_blinkingrate>=50?210:60)); 
     nvgFill(s->vg);
   }
 
@@ -1640,8 +1609,8 @@ static void ui_draw_vision_speed(UIState *s) {
     nvgMoveTo(s->vg, viz_speed_x+viz_speed_w, box_y + header_h/4);
     nvgLineTo(s->vg, viz_speed_x+viz_speed_w + viz_speed_w/2, box_y + header_h/4 + header_h/4);
     nvgLineTo(s->vg, viz_speed_x+viz_speed_w, box_y + header_h/2 + header_h/4);
-    nvgLineTo(s->vg, viz_speed_x+viz_speed_w, box_y + header_h/4);
-    nvgFillColor(s->vg, nvgRGBA(23,134,68,scene->blinker_blinkingrate>=50?120:60)); 
+    nvgClosePath(s->vg);
+    nvgFillColor(s->vg, nvgRGBA(23,134,68,scene->blinker_blinkingrate>=50?210:60)); 
     nvgFill(s->vg);
   }
 
@@ -2066,10 +2035,6 @@ static void update_status(UIState *s, int status) {
 static void ui_update(UIState *s) {
   int err;
 
-  if (!s->intrinsic_matrix_loaded) {
-    s->intrinsic_matrix_loaded = try_load_intrinsics(&s->intrinsic_matrix);
-  }
-
   if (s->vision_connect_firstrun) {
     s->carstate_sock = zsock_new_sub(">tcp://127.0.0.1:8021", "");
     assert(s->carstate_sock);
@@ -2091,7 +2056,7 @@ static void ui_update(UIState *s) {
         .bpp = 3,
         .size = s->rgb_buf_len,
       };
-      s->frame_texs[i] = visionimg_to_gl(&img);
+      s->frame_front_texs[i] = visionimg_to_gl(&img, &s->khr_front[i], &s->priv_hnds_front[i]);
 
       glBindTexture(GL_TEXTURE_2D, s->frame_texs[i]);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -2115,7 +2080,7 @@ static void ui_update(UIState *s) {
         .bpp = 3,
         .size = s->rgb_front_buf_len,
       };
-      s->frame_front_texs[i] = visionimg_to_gl(&img);
+      s->frame_texs[i] = visionimg_to_gl(&img, &s->khr[i], &s->priv_hnds[i]);
 
       glBindTexture(GL_TEXTURE_2D, s->frame_front_texs[i]);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -2665,12 +2630,6 @@ static void* light_sensor_thread(void *args) {
 
   int SENSOR_LIGHT = 7;
 
-  struct stat buffer;
-  if (stat("/sys/bus/i2c/drivers/cyccg", &buffer) == 0) {
-    LOGD("LeEco light sensor detected");
-    SENSOR_LIGHT = 5;
-  }
-
   device->activate(device, SENSOR_LIGHT, 0);
   device->activate(device, SENSOR_LIGHT, 1);
   device->setDelay(device, SENSOR_LIGHT, ms2ns(100));
@@ -2684,9 +2643,7 @@ static void* light_sensor_thread(void *args) {
       LOG_100("light_sensor_poll failed: %d", n);
     }
     if (n > 0) {
-      if (SENSOR_LIGHT == 5) s->light_sensor = buffer[0].light * 2;
-      else s->light_sensor = buffer[0].light;
-      //printf("new light sensor value: %f\n", s->light_sensor);
+      s->light_sensor = buffer[0].light;
     }
   }
 

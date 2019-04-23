@@ -16,7 +16,7 @@ from selfdrive.kegman_conf import kegman_conf
 
 kegman = kegman_conf()
 ThermalStatus = log.ThermalData.ThermalStatus
-CURRENT_TAU = 2.   # 2s time constant
+CURRENT_TAU = 15.   # 15s time constant
 
 def read_tz(x):
   with open("/sys/devices/virtual/thermal/thermal_zone%d/temp" % x) as f:
@@ -48,7 +48,7 @@ def setup_eon_fan():
     bus.write_byte_data(0x21, 0x02, 0x2)   # needed?
     bus.write_byte_data(0x21, 0x04, 0x4)   # manual override source
   except IOError:
-    print "LEON detected"
+    print("LEON detected")
     #os.system("echo 1 > /sys/devices/soc/6a00000.ssusb/power_supply/usb/usb_otg")
     LEON = True
   bus.close()
@@ -299,7 +299,7 @@ def thermald_thread():
          started_seen and (sec_since_boot() - off_ts) > 60:
         os.system('LD_LIBRARY_PATH="" svc power shutdown')
 
-    charging_disabled = check_car_battery_voltage(should_start, health, charging_disabled, msg)
+    #charging_disabled = check_car_battery_voltage(should_start, health, charging_disabled, msg)
     
     # need to force batteryStatus because after NEOS update for 0.5.7 this doesn't work properly
     if msg.thermal.batteryCurrent > 0:
@@ -308,13 +308,13 @@ def thermald_thread():
       msg.thermal.batteryStatus = "Charging"
       
     msg.thermal.chargingDisabled = charging_disabled
-    msg.thermal.chargingError = current_filter.x > 1.0   # if current is > 1A out, then charger might be off
+    msg.thermal.chargingError = current_filter.x > 0.   # if current is positive, then battery is being discharged
     msg.thermal.started = started_ts is not None
     msg.thermal.startedTs = int(1e9*(started_ts or 0))
 
     msg.thermal.thermalStatus = thermal_status
     thermal_sock.send(msg.to_bytes())
-    print msg
+    print(msg)
 
     # report to server once per minute
     if (count%60) == 0:

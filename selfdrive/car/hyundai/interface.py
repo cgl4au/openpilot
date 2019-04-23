@@ -70,14 +70,14 @@ class CarInterface(object):
     tireStiffnessRear_civic = 202500
     ret.steerMPCReactTime = 0.025     # increase total MPC projected time by 25 ms
     ret.steerMPCDampTime = 0.15       # dampen desired angle over 250ms (5 mpc cycles)
-    ret.rateFFGain = 0.01
+    ret.rateFFGain = 0.1
+    tire_stiffness_factor = 1.
 
     ret.steerActuatorDelay = 0.1  # Default delay
-    tire_stiffness_factor = 1.
+    ret.steerRateCost = 0.5
 
     if candidate == CAR.SANTA_FE:
       ret.steerKf = 0.00005
-      ret.steerRateCost = 0.5
       ret.mass = 3982 * CV.LB_TO_KG + std_cargo
       ret.wheelbase = 2.766
 
