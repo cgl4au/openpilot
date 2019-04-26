@@ -316,6 +316,11 @@ def data_send(plan, path_plan, CS, CI, CP, VM, state, events, actuators, v_cruis
     CC.hudControl.visualAlert = AM.visual_alert
     CC.hudControl.audibleAlert = AM.audible_alert
 
+    CI.angle_offset_bias = path_plan.pathPlan.angleOffset + angle_model_bias
+    CI.oscillation_frames = int(LaC.oscillation_period * 50)
+    CI.oscillation_factor = float(LaC.oscillation_factor)
+    CI.steer_error = LaC.dampened_desired_angle - LaC.dampened_actual_angle
+
     # send car controls over can
     CI.apply(CC)
 
@@ -356,6 +361,8 @@ def data_send(plan, path_plan, CS, CI, CP, VM, state, events, actuators, v_cruis
     "ufAccelCmd": float(LoC.pid.f),
     "angleSteersDes": float(path_plan.pathPlan.angleSteers),
     "dampAngleSteersDes": float(LaC.dampened_desired_angle),
+    "steeringRequested": float(CS.steeringRequested),
+    "delaySteer": float(LaC.delaySteer),
     "upSteer": float(LaC.pid.p),
     "uiSteer": float(LaC.pid.i),
     "ufSteer": float(LaC.pid.f),

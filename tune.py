@@ -41,7 +41,8 @@ button_delay = 0.2
 kegman = kegman_conf()
 #kegman.conf['tuneGernby'] = "1"
 #kegman.write_config(kegman.conf)
-param = ["tuneGernby", "reactMPC", "dampMPC", "reactSteer", "dampSteer", "rateFF", "Kp", "Ki"]
+param = ["tuneGernby", "reactMPC", "dampMPC", "reactSteer", "dampSteer", "rateFF", "Kp", "Ki", "delaySteer", "oscPeriod", "oscFactor"]
+
 
 try:
   devnull = open(os.devnull, 'w')
@@ -149,48 +150,54 @@ while True:
     process.kill()
     break
 
-
   if float(kegman.conf['tuneGernby']) != 1 and float(kegman.conf['tuneGernby']) != 0:
     kegman.conf['tuneGernby'] = "1"
-
   if float(kegman.conf['dampSteer']) < 0 and float(kegman.conf['dampSteer']) != -1:
     kegman.conf['dampSteer'] = "0"
-
   if float(kegman.conf['dampMPC']) < 0 and float(kegman.conf['dampMPC']) != -1:
     kegman.conf['dampMPC'] = "0"
-
   if float(kegman.conf['dampMPC']) > 0.3:
     kegman.conf['dampMPC'] = "0.3"
-
   if float(kegman.conf['dampSteer']) > 1.0:
     kegman.conf['dampSteer'] = "1.0"
-
   if float(kegman.conf['reactMPC']) < -0.99 and float(kegman.conf['reactMPC']) != -1:
     kegman.conf['reactMPC'] = "-0.99"
-
   if float(kegman.conf['reactMPC']) > 0.1:
     kegman.conf['reactMPC'] = "0.1"
-
   if float(kegman.conf['rateFF']) <= 0.0:
     kegman.conf['rateFF'] = "0.001"
-
   if float(kegman.conf['reactSteer']) < -0.99 and float(kegman.conf['reactSteer']) != -1:
     kegman.conf['reactSteer'] = "-0.99"
-
   if float(kegman.conf['reactSteer']) > 1.0:
     kegman.conf['reactSteer'] = "1.0"
-
   if float(kegman.conf['Ki']) < 0 and float(kegman.conf['Ki']) != -1:
     kegman.conf['Ki'] = "0"
-
   if float(kegman.conf['Ki']) > 2:
     kegman.conf['Ki'] = "2"
-
   if float(kegman.conf['Kp']) < 0 and float(kegman.conf['Kp']) != -1:
     kegman.conf['Kp'] = "0"
-
   if float(kegman.conf['Kp']) > 3:
     kegman.conf['Kp'] = "3"
+  if float(kegman.conf['delaySteer']) < 0:
+    kegman.conf['delaySteer'] = "0.001"
+
+  if float(kegman.conf['oscFactor']) < 0:
+    kegman.conf['oscFactor'] = "0.0"
+
+  if float(kegman.conf['oscPeriod']) <= 0:
+    kegman.conf['oscPeriod'] = "0.01"
+    kegman.conf['oscFactor'] = "0.0"
+
+  if float(kegman.conf['reactSteer']) + float(kegman.conf['dampSteer']) < 0:
+    if param[j] == 'reactSteer':
+      kegman.conf['reactSteer'] = str(-1 * float(kegman.conf['dampSteer']))
+    else:
+      kegman.conf['dampSteer'] = str(-1 * float(kegman.conf['reactSteer']))
+  if float(kegman.conf['reactMPC']) + float(kegman.conf['dampMPC']) < 0:
+    if param[j] == 'reactMPC':
+      kegman.conf['reactMPC'] = str(-1 * float(kegman.conf['dampMPC']))
+    else:
+      kegman.conf['dampMPC'] = str(-1 * float(kegman.conf['reactMPC']))
 
 
   if write_json:

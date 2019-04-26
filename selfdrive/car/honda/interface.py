@@ -90,6 +90,13 @@ class CarInterface(object):
     self.brake_pressed_prev = False
     self.can_invalid_count = 0
     self.cam_can_invalid_count = 0
+    self.angle_offset_bias = 0.0
+    self.angles_error = np.zeros((500))
+    self.avg_error1 = 0.0
+    self.avg_error2 = 0.0
+    self.steer_error = 0.0
+    self.oscillation_frames = int(CP.oscillationPeriod * 50)
+    self.oscillation_factor = CP.oscillationFactor
 
     self.cp = get_can_parser(CP)
     self.cp_cam = get_cam_can_parser(CP)
@@ -190,7 +197,9 @@ class CarInterface(object):
     ret.steerKiBP, ret.steerKpBP = [[0.], [0.]]
 
     ret.steerKf = 0.00006 # conservative feed-forward
-    ret.rateFFGain = 0.01
+    ret.rateFFGain = 0.4
+    ret.oscillationPeriod = 5.0  #seconds
+    ret.oscillationFactor = 0.3
 
     if candidate in [CAR.CIVIC, CAR.CIVIC_BOSCH]:
       stop_and_go = True
@@ -428,8 +437,11 @@ class CarInterface(object):
                            c.actuators.brake > brakelights_threshold)
 
     # steering wheel
-    ret.steeringAngle = self.CS.angle_steers
+    cancellation = np.interp(max(abs(self.avg_error1), self.CS.angle_steers - self.angle_offset_bias), [1.0, 2.0], [self.oscillation_factor, 0.0])
+    projected_error = float(self.angles_error[(self.frame - self.oscillation_frames) % 500] - self.avg_error1)
+    ret.steeringAngle = self.CS.angle_steers + projected_error * cancellation
     ret.steeringRate = self.CS.angle_steers_rate
+    #print("%1.1f   %1.1f  %1.1f   %1.2f   %1.1f" % (self.oscillation_frames, self.oscillation_factor, projected_error, cancellation, ret.steeringAngle))
 
     # gear shifter lever
     ret.gearShifter = self.CS.gear_shifter
@@ -640,4 +652,8 @@ class CarInterface(object):
                    snd_beep=snd_beep,
                    snd_chime=snd_chime)
 
+    #steer_error = (c.actuators.steerAngle - self.CS.angle_steers)
+    self.avg_error1 += ((self.steer_error - self.avg_error1) / 500)
+    self.avg_error2 += ((self.steer_error - self.avg_error2) / 25)
+    self.angles_error[self.frame % 500] = self.avg_error2
     self.frame += 1
