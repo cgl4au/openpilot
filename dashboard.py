@@ -14,7 +14,7 @@ def dashboard_thread(rate=100):
   #url_string = 'http://192.168.1.61:8086/write?db=carDB'
   #url_string = 'http://192.168.43.221:8086/write?db=carDB'
   #url_string = 'http://192.168.137.1:8086/write?db=carDB'
-  url_string = 'http://kevo.live:8086/write?db=carDB'
+  #url_string = 'http://kevo.live:8086/write?db=carDB'
 
   context = zmq.Context()
   poller = zmq.Poller()
@@ -42,7 +42,7 @@ def dashboard_thread(rate=100):
 
   context = zmq.Context()
   steerpub = context.socket(zmq.PUSH)
-  steerpub.connect("tcp://gernstation.synology.me:8594")
+  steerpub.connect("tcp://kevo.live:8594")
   influxFormatString = user_id + ",sources=capnp apply_steer=;noise_feedback=;ff_standard=;ff_rate=;ff_angle=;angle_steers_des=;angle_steers=;dampened_angle_steers_des=;steer_override=;v_ego=;p=;i=;f=;cumLagMs=; "
   kegmanFormatString = user_id + ",sources=kegman dampMPC=;reactMPC=;dampSteer=;reactSteer=;KpV=;KiV=;rateFF=;angleFF=;delaySteer=;oscFactor=;oscPeriod=; "
   influxDataString = ""
