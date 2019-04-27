@@ -198,8 +198,8 @@ class CarInterface(object):
 
     ret.steerKf = 0.00006 # conservative feed-forward
     ret.rateFFGain = 0.4
-    ret.oscillationPeriod = 5.0  #seconds
-    ret.oscillationFactor = 0.3
+    ret.oscillationPeriod = 1.5  #seconds
+    ret.oscillationFactor = 0.12
 
     if candidate in [CAR.CIVIC, CAR.CIVIC_BOSCH]:
       stop_and_go = True
@@ -300,8 +300,6 @@ class CarInterface(object):
       ret.steerDampTime = 0.1
       ret.steerKf = 0.00006
       ret.rateFFGain = 0.4
-      ret.oscillationPeriod = 1.5  #seconds
-      ret.oscillationFactor = 0.12
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
       ret.longitudinalKiBP = [0., 35.]
