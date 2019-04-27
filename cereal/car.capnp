@@ -358,7 +358,7 @@ struct CarParams {
   steerMPCDampTime @52 :Float32;
   steerDampTime @54 :Float32;
   steerReactTime @55 :Float32;
-  oscillationPeriod @56 :Int16;
+  oscillationPeriod @56 :Float32;
   oscillationFactor @57 :Float32;
 
   vEgoStopping @30 :Float32; # Speed at which the car goes into stopping state
