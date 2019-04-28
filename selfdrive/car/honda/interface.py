@@ -293,13 +293,13 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 17.15  # 12.53 as spec
       tire_stiffness_factor = 0.872
-      ret.steerKpV, ret.steerKiV = [[0.35], [0.165]]
+      ret.steerKpV, ret.steerKiV = [[0.4], [0.12]]
       ret.steerMPCReactTime = 0.010
-      ret.steerMPCDampTime = 0.15
-      ret.steerReactTime = 0.015
-      ret.steerDampTime = 0.1
-      ret.steerKf = 0.00006
-      ret.rateFFGain = 0.4
+      ret.steerMPCDampTime = 0.125
+      ret.steerReactTime = 0.005
+      ret.steerDampTime = 0.05
+      ret.steerKf = 0.00004
+      ret.rateFFGain = 0.25
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
       ret.longitudinalKiBP = [0., 35.]
@@ -378,8 +378,8 @@ class CarInterface(object):
 
     # prevent lurching when resuming
     if ret.enableGasInterceptor:
-      ret.gasMaxBP = [0., 8, 35]
-      ret.gasMaxV = [0.2, 0.6, 0.6]
+      ret.gasMaxBP = [0., 3, 8, 35]
+      ret.gasMaxV = [0.2, 0.3, 0.5, 0.6]
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
     else:
