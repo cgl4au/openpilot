@@ -26,8 +26,8 @@ def dashboard_thread(rate=100):
 
   frame_count = 0
 
-  #server_address = "tcp://kevo.live"
-  server_address = "tcp://gernstation.synology.me"
+  server_address = "tcp://kevo.live"
+  #server_address = "tcp://gernstation.synology.me"
 
   context = zmq.Context()
   steerPush = context.socket(zmq.PUSH)
@@ -42,20 +42,13 @@ def dashboard_thread(rate=100):
     text_file = open("/data/username", "r")
     if text_file.mode == "r":
       user_id = text_file.read()
-      if (user_id == ""):
-        user_id = params.get("DongleId")
       tunePush = None
-    else:
-        params = Params()
-        user_id = params.get("DongleId")
   except:
     params = Params()
     user_id = params.get("DongleId")
-    config['userID'] = user_id
-    tunePush.send_json(config)
     tunePush = None
 
-  tuneSub.setsockopt_string(zmq.SUBSCRIBE, user_id)
+  tuneSub.setsockopt(zmq.SUBSCRIBE, user_id)
   influxFormatString = user_id + ",sources=capnp apply_steer=;noise_feedback=;ff_standard=;ff_rate=;ff_angle=;angle_steers_des=;angle_steers=;dampened_angle_steers_des=;steer_override=;v_ego=;p=;i=;f=;cumLagMs=; "
   kegmanFormatString = user_id + ",sources=kegman dampMPC=;reactMPC=;dampSteer=;reactSteer=;KpV=;KiV=;rateFF=;angleFF=;delaySteer=;oscFactor=;oscPeriod=; "
   influxDataString = ""
@@ -123,7 +116,6 @@ def dashboard_thread(rate=100):
       insertString = ""
     else:
       time.sleep(0.1)
-
 
 def main(rate=200):
   dashboard_thread(rate)
