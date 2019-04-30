@@ -44,10 +44,15 @@ def dashboard_thread(rate=100):
     text_file = open("/data/username", "r")
     if text_file.mode == "r":
       user_id = text_file.read()
-      tunePush = None
+    if os.path.isfile('/data/kegman.json'):
+      with open('/data/kegman.json', 'r') as f:
+        config = json.load(f)
+        tunePush.send_json(config)
+        tunePush = None
   except:
     params = Params()
     user_id = params.get("DongleId")
+    tunePush.send_json(config)
     tunePush = None
 
   tuneSub.setsockopt(zmq.SUBSCRIBE, user_id)
