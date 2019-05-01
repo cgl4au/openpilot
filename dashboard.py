@@ -22,6 +22,7 @@ def dashboard_thread(rate=100):
   vEgo = 0.0
   live100 = messaging.sub_sock(context, service_list['live100'].port, addr=ipaddress, conflate=False, poller=poller)
   liveMap = messaging.sub_sock(context, service_list['liveMapData'].port, addr=ipaddress, conflate=False, poller=poller)
+  liveStreamData = messaging.sub_sock(context, 8600, addr=ipaddress, conflate=False, poller=poller)
   #gpsNMEA = messaging.sub_sock(context, service_list['gpsNMEA'].port, addr=ipaddress, conflate=True)
 
   #_live100 = None
@@ -30,6 +31,7 @@ def dashboard_thread(rate=100):
 
   server_address = "tcp://kevo.live"
   #server_address = "tcp://gernstation.synology.me"
+  #server_address = "tcp://192.168.1.2"
 
   context = zmq.Context()
   steerPush = context.socket(zmq.PUSH)
@@ -42,26 +44,35 @@ def dashboard_thread(rate=100):
 
   try:
     text_file = open("/data/username", "r")
+    user_id = None
     if text_file.mode == "r":
       user_id = text_file.read()
+    if user_id is None or "":
+      user_id = Params().get("DongleId")
     if os.path.isfile('/data/kegman.json'):
       with open('/data/kegman.json', 'r') as f:
         config = json.load(f)
         tunePush.send_json(config)
         tunePush = None
+    else:
+        params = Params()
+        user_id = params.get("DongleId")
   except:
     params = Params()
     user_id = params.get("DongleId")
+    config['userID'] = user_id
     tunePush.send_json(config)
     tunePush = None
 
   tuneSub.setsockopt(zmq.SUBSCRIBE, user_id)
   influxFormatString = user_id + ",sources=capnp apply_steer=;noise_feedback=;ff_standard=;ff_rate=;ff_angle=;angle_steers_des=;angle_steers=;dampened_angle_steers_des=;steer_override=;v_ego=;p=;i=;f=;cumLagMs=; "
-  kegmanFormatString = user_id + ",sources=kegman dampMPC=;reactMPC=;dampSteer=;reactSteer=;KpV=;KiV=;rateFF=;angleFF=;delaySteer=;oscFactor=;oscPeriod=; "
+  kegmanFormatString = user_id + ",sources=kegman backlash=;dampMPC=;reactMPC=;dampSteer=;reactSteer=;KpV=;KiV=;rateFF=;angleFF=;delaySteer=;oscFactor=;oscPeriod=; "
   mapFormatString = "location,user=" + user_id + " latitude=;longitude=;altitude=;speed=;bearing=;accuracy=;speedLimitValid=;speedLimit=;curvatureValid=;curvature=;wayId=;distToTurn=;mapValid=;speedAdvisoryValid=;speedAdvisory=;speedAdvisoryValid=;speedAdvisory=;speedLimitAheadValid=;speedLimitAhead=;speedLimitAheadDistance=; "
   gpsFormatString="gps,user=" + user_id + " "
+  liveStreamFormatString = "curvature,user=" + user_id + " l_curv=;p_curv=;r_curv=;map_curv=;map_rcurv=;map_rcurvx=;v_curv=;l_diverge=;r_diverge=; "
   influxDataString = ""
   kegmanDataString = ""
+  liveStreamDataString = ""
   mapDataString = ""
 
   lastGPStime = 0
@@ -79,6 +90,10 @@ def dashboard_thread(rate=100):
           json.dump(config, f, indent=2, sort_keys=True)
           os.chmod("/data/kegman.json", 0o764)
 
+      if socket is liveStreamData:
+        livestream = liveStreamData.recv_string() + str(receiveTime) + "|"
+        if vEgo > 0: liveStreamDataString += livestream
+
       if socket is liveMap:
         _liveMap = messaging.drain_sock(socket)
         for lmap in _liveMap:
@@ -89,7 +104,7 @@ def dashboard_thread(rate=100):
               receiveTime = int((monoTimeOffset + lmap.logMonoTime) * 0.0000002) * 5
             lm = lmap.liveMapData
             lg = lm.lastGps
-            print(lm)
+            #print(lm)
             mapDataString += ("%f,%f,%f,%f,%f,%f,%d,%f,%d,%f,%f,%f,%d,%d,%f,%d,%f,%d,%f,%f,%d|" %
                   (lg.latitude ,lg.longitude ,lg.altitude ,lg.speed ,lg.bearing ,lg.accuracy ,lm.speedLimitValid ,lm.speedLimit ,lm.curvatureValid
                   ,lm.curvature ,lm.wayId ,lm.distToTurn ,lm.mapValid ,lm.speedAdvisoryValid ,lm.speedAdvisory ,lm.speedAdvisoryValid ,lm.speedAdvisory
@@ -157,6 +172,7 @@ def dashboard_thread(rate=100):
           if os.path.isfile('/data/kegman.json'):
             with open('/data/kegman.json', 'r') as f:
               config = json.load(f)
+              backlash = config['backlash']
               reactMPC = config['reactMPC']
               dampMPC = config['dampMPC']
               reactSteer = config['reactSteer']
@@ -168,16 +184,20 @@ def dashboard_thread(rate=100):
               oscFactor = config['oscFactor']
               oscPeriod = config['oscPeriod']
               kegmanDataString += ("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s|" % \
-                    (dampMPC, reactMPC, dampSteer, reactSteer, steerKpV, steerKiV, rateFF, l100.live100.angleFFGain, delaySteer,
+                    (backlash, dampMPC, reactMPC, dampSteer, reactSteer, steerKpV, steerKiV, rateFF, l100.live100.angleFFGain, delaySteer,
                     oscFactor, oscPeriod, receiveTime))
               insertString = kegmanFormatString + "~" + kegmanDataString + "!"
         except:
           kegman_valid = False
 
+      if liveStreamDataString != "":
+        insertString = insertString + liveStreamFormatString + "~" + liveStreamDataString + "!"
+        print(insertString)
+        liveStreamDataString =""
       insertString = insertString + influxFormatString + "~" + influxDataString + "!"
       insertString = insertString + mapFormatString + "~" + mapDataString
       steerPush.send_string(insertString)
-      print(len(insertString))
+      #print(len(insertString))
       frame_count = 0
       influxDataString = ""
       kegmanDataString = ""

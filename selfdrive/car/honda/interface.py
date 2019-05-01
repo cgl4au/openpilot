@@ -198,8 +198,9 @@ class CarInterface(object):
 
     ret.steerKf = 0.00006 # conservative feed-forward
     ret.rateFFGain = 0.4
-    ret.oscillationPeriod = 1.5  #seconds
-    ret.oscillationFactor = 0.12
+    ret.oscillationPeriod = 5.0  #seconds
+    ret.oscillationFactor = 0.3
+    ret.steerBacklash = 0.0
 
     if candidate in [CAR.CIVIC, CAR.CIVIC_BOSCH]:
       stop_and_go = True
@@ -235,6 +236,7 @@ class CarInterface(object):
       ret.rateFFGain = 0.2
       ret.oscillationPeriod = 4.0  #seconds
       ret.oscillationFactor = 0.0
+      ret.steerBacklash = 0.1
       ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
@@ -301,13 +303,16 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 17.15  # 12.53 as spec
       tire_stiffness_factor = 0.872
-      ret.steerKpV, ret.steerKiV = [[0.4], [0.12]]
-      ret.steerMPCReactTime = 0.010
-      ret.steerMPCDampTime = 0.125
-      ret.steerReactTime = 0.005
-      ret.steerDampTime = 0.05
-      ret.steerKf = 0.00004
-      ret.rateFFGain = 0.25
+      ret.steerKpV, ret.steerKiV = [[0.6], [0.18]]
+      ret.steerMPCReactTime = 0.025
+      ret.steerMPCDampTime = 0.2
+      ret.steerReactTime = 0.0
+      ret.steerDampTime = 0.2
+      ret.steerKf = 0.00006
+      ret.rateFFGain = 0.4
+      ret.oscillationPeriod = 4.0  #seconds
+      ret.oscillationFactor = 0.0
+      ret.steerBacklash = 0.1
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [1.2, 0.8, 0.5]
       ret.longitudinalKiBP = [0., 35.]
