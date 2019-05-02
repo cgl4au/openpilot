@@ -57,12 +57,9 @@ def dashboard_thread(rate=100):
     else:
         params = Params()
         user_id = params.get("DongleId")
+        tunePush = None
   except:
-    params = Params()
-    user_id = params.get("DongleId")
-    config['userID'] = user_id
-    tunePush.send_json(config)
-    tunePush = None
+    print("An exception occurred")
 
   tuneSub.setsockopt(zmq.SUBSCRIBE, user_id)
   influxFormatString = user_id + ",sources=capnp apply_steer=;noise_feedback=;ff_standard=;ff_rate=;ff_angle=;angle_steers_des=;angle_steers=;dampened_angle_steers_des=;steer_override=;v_ego=;p=;i=;f=;cumLagMs=; "
