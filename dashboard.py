@@ -52,6 +52,7 @@ def dashboard_thread(rate=100):
     if os.path.isfile('/data/kegman.json'):
       with open('/data/kegman.json', 'r') as f:
         config = json.load(f)
+        config["userID"] = user_id
         tunePush.send_json(config)
         tunePush = None
     else:
