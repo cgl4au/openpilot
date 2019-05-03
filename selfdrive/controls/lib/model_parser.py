@@ -2,6 +2,7 @@ import math
 from selfdrive.kegman_conf import kegman_conf
 from common.numpy_fast import interp, clip
 import zmq
+from selfdrive.kegman_conf import kegman_conf
 from selfdrive.controls.lib.latcontrol_helpers import model_polyfit, calc_desired_path, compute_path_pinv, calc_curvature
 
 kegman = kegman_conf()
