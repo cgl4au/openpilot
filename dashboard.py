@@ -29,8 +29,8 @@ def dashboard_thread(rate=100):
 
   frame_count = 0
 
-  server_address = "tcp://kevo.live"
-  #server_address = "tcp://gernstation.synology.me"
+  #server_address = "tcp://kevo.live"
+  server_address = "tcp://gernstation.synology.me"
   #server_address = "tcp://192.168.1.2"
 
   context = zmq.Context()

@@ -47,7 +47,7 @@ def data_sample(CI, CC, CS, plan_sock, path_plan_sock, thermal, calibration, hea
   rk.monitor_time()
   # Update carstate from CAN and create events
   if rk.remaining > 10. / 1000 or rk.frame < 1000:
-    if rk.frame % 4 > 0 or CS.steeringTorqueClipped == False:
+    if rk.frame % 5 > 0 or CS.steeringTorqueClipped == False:
       CS = CI.update(CC)
     else:
       print("torque_clipped!")
@@ -255,7 +255,7 @@ def state_control(plan, path_plan, CS, CP, state, events, v_cruise_kph, v_cruise
 
   cur_time = sec_since_boot()  # TODO: This won't work in replay
   mpc_time = plan.l20MonoTime / 1e9
-  _DT = 0.01 # 100Hz
+  _DT = 0.011765 # 100Hz
 
   dt = min(cur_time - mpc_time, _DT_MPC + _DT) + _DT  # no greater than dt mpc + dt, to prevent too high extraps
   a_acc_sol = plan.aStart + (dt / _DT_MPC) * (plan.aTarget - plan.aStart)
@@ -265,7 +265,7 @@ def state_control(plan, path_plan, CS, CP, state, events, v_cruise_kph, v_cruise
   actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
                                               v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
   # Steering PID loop and lateral MPC
-  actuators.steer, actuators.steerAngle = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate,
+  actuators.steer, actuators.steerAngle, actuators.steerRate = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate,
                                   CS.steeringTorqueClipped, CS.steeringPressed, CP, VM, path_plan)
 
   # Send a "steering required alert" if saturation count has reached the limit
@@ -317,7 +317,6 @@ def data_send(plan, path_plan, CS, CI, CP, VM, state, events, actuators, v_cruis
     CC.hudControl.leftLaneVisible = bool(path_plan.pathPlan.lProb > 0.5)
     CC.hudControl.visualAlert = AM.visual_alert
     CC.hudControl.audibleAlert = AM.audible_alert
-
     CI.angle_offset_bias = path_plan.pathPlan.angleOffset + angle_model_bias
     CI.oscillation_frames = int(LaC.oscillation_period * 50)
     CI.oscillation_factor = float(LaC.oscillation_factor)
