@@ -72,6 +72,7 @@ def dashboard_thread(rate=100):
   kegmanDataString = ""
   liveStreamDataString = ""
   mapDataString = ""
+  insertString = ""
 
   lastGPStime = 0
   lastMaptime = 0
@@ -83,7 +84,6 @@ def dashboard_thread(rate=100):
     for socket, event in poller.poll(0):
       if socket is tuneSub:
         config = json.loads(tuneSub.recv_multipart()[1])
-        print(config)
         with open('/data/kegman.json', 'w') as f:
           json.dump(config, f, indent=2, sort_keys=True)
           os.chmod("/data/kegman.json", 0o764)
