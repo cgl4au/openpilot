@@ -202,7 +202,7 @@ def dashboard_thread(rate=100):
       mapDataString = ""
       insertString = ""
     else:
-      time.sleep(0.01)
+      time.sleep(0.1)
 
 def main(rate=200):
   dashboard_thread(rate)
