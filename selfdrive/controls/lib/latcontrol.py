@@ -102,6 +102,7 @@ class LatControl(object):
         self.dampened_angle_steers = float(angle_steers)
         self.dampened_desired_angle = float(path_plan.angleSteers)
         self.dampened_desired_rate = float(path_plan.rateSteers)
+
       else:
         cur_time = sec_since_boot()
         projected_desired_angle = interp(cur_time + self.total_desired_projection, path_plan.mpcTimes, path_plan.mpcAngles)
@@ -129,8 +130,7 @@ class LatControl(object):
           print(steer_feedforward)
 
         output_steer = self.pid.update(self.dampened_desired_angle, self.dampened_angle_steers, check_saturation=(v_ego > 10),
-                                    override=steer_override, feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone,
-                                    freeze_integrator=torque_clipped)
+                                    override=steer_override, feedforward=steer_feedforward, speed=v_ego, deadzone=self.deadzone)
 
         if self.gernbySteer and not torque_clipped and not steer_override and v_ego > 10.0:
           if abs(angle_steers) > (self.angle_ff_bp[0][1] / 2.0):
