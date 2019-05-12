@@ -16,10 +16,9 @@ class ModelParser(object):
     self.last_model = 0.
     self.lead_dist, self.lead_prob, self.lead_var = 0, 0, 1
     self._path_pinv = compute_path_pinv()
-
-    self.lane_width_estimate = 2.85
+    self.lane_width_estimate = 2.8
     self.lane_width_certainty = 1.0
-    self.lane_width = 2.85
+    self.lane_width = 2.8
     self.l_prob = 0.
     self.r_prob = 0.
     self.lane_prob= 0.
@@ -51,7 +50,11 @@ class ModelParser(object):
       self.lane_width_certainty += 0.05 * (lr_prob - self.lane_width_certainty)
       current_lane_width = abs(l_poly[3] - r_poly[3])
       self.lane_width_estimate += 0.005 * (current_lane_width - self.lane_width_estimate)
+<<<<<<< HEAD
       speed_lane_width = interp(v_ego, [0., 31.], [2.85, 3.5])
+=======
+      speed_lane_width = interp(v_ego, [0., 31.], [2.8, 3.5])
+>>>>>>> dea27750... lane width to 2.8
       self.lane_width = self.lane_width_certainty * self.lane_width_estimate + \
                         (1 - self.lane_width_certainty) * speed_lane_width
 
