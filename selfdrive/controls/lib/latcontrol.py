@@ -149,6 +149,6 @@ class LatControl(object):
     self.average_angle_steers += 0.1 * (angle_steers - self.average_angle_steers)
 
     if CP.steerControlType == car.CarParams.SteerControlType.torque:
-      return float(output_steer), float(path_plan.angleSteers)
+      return float(output_steer), float(path_plan.angleSteers), float(self.dampened_desired_rate)
     else:
-      return float(self.dampened_desired_angle), float(path_plan.angleSteers)
+      return float(self.dampened_desired_angle), float(path_plan.angleSteers), float(self.dampened_desired_rate)
