@@ -399,6 +399,9 @@ def data_send(plan, path_plan, CS, CI, CP, VM, state, events, actuators, v_cruis
   cc_send.carControl = CC
   carcontrol.send(cc_send.to_bytes())
 
+  #if (rk.frame % 36000) == 0:    # update angle offset every 6 minutes
+  #  params.put("ControlsParams", json.dumps({'angle_model_bias': angle_model_bias,
+  #            'angle_ff_gain': LaC.angle_ff_gain}))
   return CC
 
 
